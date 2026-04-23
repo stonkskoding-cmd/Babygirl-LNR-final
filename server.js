@@ -297,20 +297,29 @@ app.put('/api/settings', authenticate, isAdmin, async (req, res) => {
 
 // --- Init Default Data ---
 async function init() {
-  const admin = await User.findOne({ username: 'admin' });
-  if (!admin) {
-    const hash = await bcrypt.hash('admin123', 10);
-    await User.create({ username: 'admin', password: hash, role: 'admin' });
-    console.log('✅ Admin created: admin / admin123');
-  }
+    // Первый админ
+    const admin1 = await User.findOne({ username: 'admin' });
+    if (!admin1) {
+        const hash = await bcrypt.hash('admin123', 10);
+        await User.create({ username: 'admin', password: hash, role: 'admin' });
+        console.log('✅ Admin 1 created: admin / admin123');
+    }
+    
+    // Второй админ (оператор)
+    const admin2 = await User.findOne({ username: 'operator' });
+    if (!admin2) {
+        const hash = await bcrypt.hash('operator123', 10);
+        await User.create({ username: 'operator', password: hash, role: 'admin' });
+        console.log('✅ Admin 2 created: operator / operator123');
+    }
   
-  if (await Girl.countDocuments() === 0) {
-    await Girl.insertMany([
-      { name: 'Алина', city: 'Луганск', photos: [], desc: 'Нежная и романтичная.', height: '168', weight: '52', breast: '2', age: '21', prefs: 'Романтика', services: [{name:'Встреча',price:'3000'},{name:'Свидание',price:'5000'},{name:'Ночь',price:'10000'}] },
-      { name: 'Виктория', city: 'Стаханов', photos: [], desc: 'Яркая брюнетка.', height: '172', weight: '55', breast: '3', age: '23', prefs: 'Танцы', services: [{name:'Встреча',price:'3500'},{name:'Свидание',price:'6000'},{name:'Ночь',price:'12000'}] }
-    ]);
-    console.log('✅ Demo girls created');
-  }
+    if (await Girl.countDocuments() === 0) {
+        await Girl.insertMany([
+            { name: 'Алина', city: 'Луганск', photos: [], desc: 'Нежная и романтичная.', height: '168', weight: '52', breast: '2', age: '21', prefs: 'Романтика', services: [{name:'Встреча',price:'3000'},{name:'Свидание',price:'5000'},{name:'Ночь',price:'10000'}] },
+            { name: 'Виктория', city: 'Стаханов', photos: [], desc: 'Яркая брюнетка.', height: '172', weight: '55', breast: '3', age: '23', prefs: 'Танцы', services: [{name:'Встреча',price:'3500'},{name:'Свидание',price:'6000'},{name:'Ночь',price:'12000'}] }
+        ]);
+        console.log('✅ Demo girls created');
+    }
 }
 init();
 
