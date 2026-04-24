@@ -10,24 +10,13 @@ const fs = require('fs');
 
 const app = express();
 
-// --- Middleware ---
-// Разрешаем запросы с Netlify (фронтенд) и локально
-app.use(cors({ 
-  origin: [
-    'https://prodakhen.onrender.com', 
-    'https://babgirl.netlify.app', 
-    'http://localhost:3000',
-    'http://127.0.0.1:5500'
-  ], 
-  credentials: true 
-}));
-
+// CORS для Netlify + Render
+app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Создаем папку для фото если нет
 if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
 
 const storage = multer.diskStorage({
@@ -36,12 +25,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// --- Database Connection ---
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/babgirl')
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Error:', err));
 
-// --- Models ---
+// === MODELS ===
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -76,17 +64,14 @@ const SettingsSchema = new mongoose.Schema({
 });
 const Settings = mongoose.model('Settings', SettingsSchema);
 
-// --- Auth Middleware ---
+// === AUTH ===
 const authenticate = (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ message: 'Access denied' });
   try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified;
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
     next();
-  } catch (err) {
-    res.status(400).json({ message: 'Invalid token' });
-  }
+  } catch (err) { res.status(400).json({ message: 'Invalid token' }); }
 };
 
 const isAdmin = (req, res, next) => {
@@ -94,7 +79,35 @@ const isAdmin = (req, res, next) => {
   next();
 };
 
-// --- Routes: Auth ---
+// === INIT & ADMIN FIX ===
+async function init() {
+  // Принудительно создаем/обновляем админов с известными паролями
+  const admins = [
+    { username: 'admin', pass: 'admin123' },
+    { username: 'operator', pass: 'operator123' }
+  ];
+  
+  for (const a of admins) {
+    const hash = await bcrypt.hash(a.pass, 10);
+    await User.findOneAndUpdate(
+      { username: a.username },
+      { $set: { password: hash, role: 'admin' } },
+      { upsert: true }
+    );
+  }
+  console.log('✅ Admin accounts ready: admin/admin123 & operator/operator123');
+
+  if (await Girl.countDocuments() === 0) {
+    await Girl.insertMany([
+      { name: 'Алина', city: 'Луганск', photos: [], desc: 'Нежная и романтичная.', height: '168', weight: '52', breast: '2', age: '21', prefs: 'Романтика', services: [{name:'Встреча',price:'3000'},{name:'Свидание',price:'5000'},{name:'Ночь',price:'10000'}] },
+      { name: 'Виктория', city: 'Стаханов', photos: [], desc: 'Яркая брюнетка.', height: '172', weight: '55', breast: '3', age: '23', prefs: 'Танцы', services: [{name:'Встреча',price:'3500'},{name:'Свидание',price:'6000'},{name:'Ночь',price:'12000'}] }
+    ]);
+    console.log('✅ Demo girls created');
+  }
+}
+init();
+
+// === ROUTES ===
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -120,27 +133,17 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (e) { res.status(500).json({ message: 'Ошибка сервера' }); }
 });
 
-// --- Routes: Girls ---
 app.get('/api/girls', async (req, res) => {
-  try {
-    const girls = await Girl.find().sort({ createdAt: -1 });
-    res.json(girls);
-  } catch (e) { res.status(500).json([]); }
+  try { res.json(await Girl.find().sort({ createdAt: -1 })); } 
+  catch (e) { res.status(500).json([]); }
 });
 
 app.post('/api/girls', authenticate, isAdmin, async (req, res) => {
   try {
     const { action, girl } = req.body;
-    if (action === 'add') {
-      const newGirl = await Girl.create(girl);
-      res.json(newGirl);
-    } else if (action === 'update') {
-      const updated = await Girl.findByIdAndUpdate(girl._id, girl, { new: true });
-      res.json(updated);
-    } else if (action === 'delete') {
-      await Girl.findByIdAndDelete(girl._id);
-      res.json({ success: true });
-    }
+    if (action === 'add') res.json(await Girl.create(girl));
+    else if (action === 'update') res.json(await Girl.findByIdAndUpdate(girl._id, girl, { new: true }));
+    else if (action === 'delete') { await Girl.findByIdAndDelete(girl._id); res.json({ success: true }); }
   } catch (e) { res.status(500).json({ message: 'Ошибка' }); }
 });
 
@@ -149,7 +152,7 @@ app.post('/api/upload', authenticate, isAdmin, upload.array('photos', 4), (req, 
   res.json({ urls });
 });
 
-// --- Routes: Chat (BOT LOGIC) ---
+// === CHAT ===
 app.get('/api/chat', authenticate, async (req, res) => {
   try {
     const chat = await Chat.findOne({ userId: req.user.username });
@@ -171,7 +174,6 @@ app.post('/api/chat/init', authenticate, async (req, res) => {
     chat.selectedGirl = girl;
     chat.waitingForOperator = false;
 
-    // Бот сразу показывает анкету
     chat.messages.push(
       { type: 'bot', text: 'Здравствуйте! 👋 Вы выбрали:', time: new Date() },
       { type: 'bot', text: '', extra: { type: 'profile', girl }, time: new Date() },
@@ -195,7 +197,6 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
       const lower = text.toLowerCase();
       let botReply = null;
 
-      // FSM State Machine
       if (chat.botStep === 'greet' || chat.botStep === 'asking_city') {
         const cities = ['луганск', 'стаханов', 'первомайск'];
         const city = cities.find(c => lower.includes(c));
@@ -244,12 +245,10 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
   } catch (e) { res.status(500).json({ message: 'Ошибка чата' }); }
 });
 
-// --- Routes: Admin Chat ---
+// === ADMIN CHAT ===
 app.get('/api/admin/chats', authenticate, isAdmin, async (req, res) => {
-  try {
-    const chats = await Chat.find().sort({ updatedAt: -1 });
-    res.json(chats);
-  } catch (e) { res.status(500).json([]); }
+  try { res.json(await Chat.find().sort({ updatedAt: -1 })); } 
+  catch (e) { res.status(500).json([]); }
 });
 
 app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
@@ -258,14 +257,13 @@ app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
     const chat = await Chat.findOne({ userId });
     if (!chat) return res.status(404).json({ message: 'Not found' });
     
-    // Удаляем статус "В обработке"
     if (chat.messages.length > 0 && chat.messages[chat.messages.length - 1].extra?.type === 'processing') {
       chat.messages.pop();
     }
 
     chat.messages.push({ type: 'bot', text: `[Оператор] ${text}`, time: new Date() });
     chat.waitingForOperator = false;
-    chat.botStep = 'greet'; // Сброс бота
+    chat.botStep = 'greet';
     chat.selectedGirl = null;
     await chat.save();
     res.json({ success: true });
@@ -279,7 +277,13 @@ app.put('/api/admin/chat/:userId/clear', authenticate, isAdmin, async (req, res)
   } catch (e) { res.status(500).json({ message: 'Ошибка' }); }
 });
 
-// --- Routes: Settings ---
+app.delete('/api/admin/chat/:userId', authenticate, isAdmin, async (req, res) => {
+  try {
+    await Chat.findOneAndDelete({ userId: req.params.userId });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ message: 'Ошибка удаления' }); }
+});
+
 app.get('/api/settings', async (req, res) => {
   try {
     let s = await Settings.findOne();
@@ -295,35 +299,6 @@ app.put('/api/settings', authenticate, isAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ message: 'Ошибка' }); }
 });
 
-// --- Init Default Data ---
-async function init() {
-    // Первый админ
-    const admin1 = await User.findOne({ username: 'admin' });
-    if (!admin1) {
-        const hash = await bcrypt.hash('admin123', 10);
-        await User.create({ username: 'admin', password: hash, role: 'admin' });
-        console.log('✅ Admin 1 created: admin / admin123');
-    }
-    
-    // Второй админ (оператор)
-    const admin2 = await User.findOne({ username: 'operator' });
-    if (!admin2) {
-        const hash = await bcrypt.hash('operator123', 10);
-        await User.create({ username: 'operator', password: hash, role: 'admin' });
-        console.log('✅ Admin 2 created: operator / operator123');
-    }
-  
-    if (await Girl.countDocuments() === 0) {
-        await Girl.insertMany([
-            { name: 'Алина', city: 'Луганск', photos: [], desc: 'Нежная и романтичная.', height: '168', weight: '52', breast: '2', age: '21', prefs: 'Романтика', services: [{name:'Встреча',price:'3000'},{name:'Свидание',price:'5000'},{name:'Ночь',price:'10000'}] },
-            { name: 'Виктория', city: 'Стаханов', photos: [], desc: 'Яркая брюнетка.', height: '172', weight: '55', breast: '3', age: '23', prefs: 'Танцы', services: [{name:'Встреча',price:'3500'},{name:'Свидание',price:'6000'},{name:'Ночь',price:'12000'}] }
-        ]);
-        console.log('✅ Demo girls created');
-    }
-}
-init();
-
-// Serve Frontend
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 const PORT = process.env.PORT || 3000;
