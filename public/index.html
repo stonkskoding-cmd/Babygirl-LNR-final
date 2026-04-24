@@ -269,8 +269,8 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 
 <script>
 // === CONFIG ===
-// ВНИМАНИЕ: После деплоя на Netlify, замени эту строку на URL твоего бэкенда на Render!
-const API_URL = 'https://prodakhen.onrender.com'; 
+// ВАЖНО: Замени этот URL на свой с Render!
+const API_URL = 'https://твой-сайт.onrender.com'; 
 
 // === STATE ===
 let state = {
@@ -281,63 +281,51 @@ let state = {
     girls: [],
     adminChatWith: null
 };
-
 let tempPhotos = [null, null, null, null];
+let chatRefreshInterval = null;
 
-// === AUTH HELPERS ===
+// === API HELPER ===
 async function apiCall(endpoint, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...options.headers };
     if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
-    
     const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-    if (res.status === 401) {
-        logout();
-        throw new Error('Unauthorized');
-    }
+    if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
     return res.json();
 }
 
 // === INIT ===
 async function init() {
     document.getElementById('ageModal').classList.add('show');
-    if (state.user) {
-        updateUIForLoggedUser();
-    }
+    if (state.user) updateUIForLoggedUser();
     loadGirls();
     loadSettings();
-    window.addEventListener('scroll', () => {
-        document.getElementById('header').classList.toggle('scrolled', window.scrollY > 20);
-    });
+    window.addEventListener('scroll', () => document.getElementById('header').classList.toggle('scrolled', window.scrollY > 20));
 }
 
 function loadSettings() {
-    fetch(`${API_URL}/api/settings`)
-        .then(r => r.json())
-        .then(s => {
-            state.settings = s;
-            document.getElementById('mainHeaderTitle').textContent = s.mainTitle;
-            document.getElementById('mainHeaderSubtitle').textContent = s.mainSubtitle;
-            document.title = s.title;
-            if (s.phone) {
-                document.getElementById('catalogPhone').style.display = 'block';
-                document.getElementById('catalogPhoneLink').textContent = '📞 ' + s.phone;
-                document.getElementById('catalogPhoneLink').href = 'tel:' + s.phone.replace(/\s/g, '');
-            }
-            if (s.mainTitle) document.getElementById('admMainTitle').value = s.mainTitle;
-            if (s.mainSubtitle) document.getElementById('admMainSubtitle').value = s.mainSubtitle;
-            if (s.title) document.getElementById('admSiteTitle').value = s.title;
-            if (s.phone) document.getElementById('admSitePhone').value = s.phone;
-        });
+    fetch(`${API_URL}/api/settings`).then(r => r.json()).then(s => {
+        state.settings = s;
+        document.getElementById('mainHeaderTitle').textContent = s.mainTitle;
+        document.getElementById('mainHeaderSubtitle').textContent = s.mainSubtitle;
+        document.title = s.title;
+        if (s.phone) {
+            document.getElementById('catalogPhone').style.display = 'block';
+            document.getElementById('catalogPhoneLink').textContent = '📞 ' + s.phone;
+            document.getElementById('catalogPhoneLink').href = 'tel:' + s.phone.replace(/\s/g, '');
+        }
+        if(s.mainTitle) document.getElementById('admMainTitle').value = s.mainTitle;
+        if(s.mainSubtitle) document.getElementById('admMainSubtitle').value = s.mainSubtitle;
+        if(s.title) document.getElementById('admSiteTitle').value = s.title;
+        if(s.phone) document.getElementById('admSitePhone').value = s.phone;
+    });
 }
 
 function loadGirls() {
-    fetch(`${API_URL}/api/girls`)
-        .then(r => r.json())
-        .then(data => {
-            state.girls = data;
-            renderGirls();
-            renderCatalogFilters();
-        });
+    fetch(`${API_URL}/api/girls`).then(r => r.json()).then(data => {
+        state.girls = data;
+        renderGirls();
+        renderCatalogFilters();
+    });
 }
 
 // === AUTH ===
@@ -345,61 +333,33 @@ async function login() {
     const nick = document.getElementById('loginNick').value.trim();
     const pass = document.getElementById('loginPass').value.trim();
     if (!nick || !pass) return showToast('Заполните все поля', 'error');
-    
     try {
-        const data = await apiCall('/api/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ username: nick, password: pass })
-        });
-        
+        const data = await apiCall('/api/auth/login', { method: 'POST', body: JSON.stringify({ username: nick, password: pass }) });
         if (data.token) {
-            state.token = data.token;
-            state.user = data.user;
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            closeAuthModal();
-            updateUIForLoggedUser();
-            showToast('Добро пожаловать!', 'success');
-        } else {
-            showToast(data.message || 'Ошибка входа', 'error');
-        }
-    } catch (e) {
-        showToast('Ошибка соединения', 'error');
-    }
+            state.token = data.token; state.user = data.user;
+            localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user));
+            closeAuthModal(); updateUIForLoggedUser(); showToast('Добро пожаловать!', 'success');
+        } else showToast(data.message || 'Ошибка входа', 'error');
+    } catch (e) { showToast('Ошибка соединения', 'error'); }
 }
 
 async function register() {
     const nick = document.getElementById('regNick').value.trim();
     const pass = document.getElementById('regPass').value.trim();
     if (!nick || !pass) return showToast('Заполните все поля', 'error');
-    
     try {
-        const data = await apiCall('/api/auth/register', {
-            method: 'POST',
-            body: JSON.stringify({ username: nick, password: pass })
-        });
-        
+        const data = await apiCall('/api/auth/register', { method: 'POST', body: JSON.stringify({ username: nick, password: pass }) });
         if (data.token) {
-            state.token = data.token;
-            state.user = data.user;
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.user));
-            closeAuthModal();
-            updateUIForLoggedUser();
-            showToast('Регистрация успешна!', 'success');
-        } else {
-            showToast(data.message || 'Ошибка', 'error');
-        }
-    } catch (e) {
-        showToast('Ошибка', 'error');
-    }
+            state.token = data.token; state.user = data.user;
+            localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user));
+            closeAuthModal(); updateUIForLoggedUser(); showToast('Регистрация успешна!', 'success');
+        } else showToast(data.message || 'Ошибка', 'error');
+    } catch (e) { showToast('Ошибка', 'error'); }
 }
 
 function logout() {
-    state.token = null;
-    state.user = null;
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    state.token = null; state.user = null;
+    localStorage.removeItem('token'); localStorage.removeItem('user');
     document.getElementById('pdName').textContent = 'Профиль';
     document.getElementById('adminBtn').style.display = 'none';
     showToast('Вы вышли', 'success');
@@ -411,12 +371,13 @@ function updateUIForLoggedUser() {
     document.getElementById('adminBtn').style.display = state.user.role === 'admin' ? 'flex' : 'none';
 }
 
-// === NAVIGATION ===
+// === NAVIGATION & CHAT POLLING ===
 function navigateTo(section) {
-    if ((section === 'chat' || section === 'admin') && !state.user) {
-        openAuthModal();
-        return;
-    }
+    if ((section === 'chat' || section === 'admin') && !state.user) { openAuthModal(); return; }
+    
+    // Очистка интервалов при смене раздела
+    if (chatRefreshInterval) { clearInterval(chatRefreshInterval); chatRefreshInterval = null; }
+
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById('sec-' + section).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -424,98 +385,34 @@ function navigateTo(section) {
     if (navBtn) navBtn.classList.add('active');
     state.currentSection = section;
     window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 
-// === GIRLS & FILTERS ===
-function renderGirls() {
-    const girls = state.currentCityFilter === 'all' ? state.girls : state.girls.filter(g => g.city === state.currentCityFilter);
-    const grid = document.getElementById('girlsGrid');
-    if (girls.length === 0) {
-        grid.innerHTML = '<div class="empty-state"><div class="icon">😔</div><p>Анкет пока нет</p></div>';
-        return;
+    // Запуск опроса чата
+    if (section === 'chat' && state.user) {
+        loadChatHistory();
+        chatRefreshInterval = setInterval(loadChatHistory, 3000);
     }
-    grid.innerHTML = girls.map(g => createGirlCard(g)).join('');
-}
-
-function createGirlCard(g) {
-    const mp = (g.photos && g.photos[0]) || '';
-    const ih = mp ? `<img class="girl-card-img" src="${mp}" alt="${g.name}">` : '<div class="girl-card-img-placeholder">👩</div>';
-    return `<div class="girl-card" onclick="openProfile('${g._id}')">
-        ${ih}
-        <div class="girl-card-info">
-            <div class="girl-card-top"><span class="girl-card-name">${g.name}</span><span class="girl-card-city">${g.city}</span></div>
-            <p class="girl-card-desc">${g.desc}</p>
-            <div class="girl-card-stats">
-                <span class="stat-tag">📏 ${g.height} см</span>
-                <span class="stat-tag">⚖️ ${g.weight} кг</span>
-                <span class="stat-tag">👙 ${g.breast}</span>
-                <span class="stat-tag">🎂 ${g.age} лет</span>
-            </div>
-            <div class="girl-card-payment">💰 Оплата девушкам в руки</div>
-            <div class="girl-card-actions">
-                <button class="btn-open" onclick="event.stopPropagation();openProfile('${g._id}')">Открыть анкету</button>
-                <button class="btn-order" onclick="event.stopPropagation();orderGirl('${g._id}')">Заказать</button>
-            </div>
-        </div>
-    </div>`;
-}
-
-function openProfile(id) {
-    const g = state.girls.find(x => x._id == id);
-    if (!g) return;
-    const mp = (g.photos && g.photos[0]) || '';
-    const ih = mp ? `<img class="profile-modal-img" src="${mp}" alt="${g.name}">` : '<div class="profile-modal-img-placeholder">👩</div>';
-    const sH = (g.services || []).map(s => `<div class="profile-service"><span class="name">${s.name}</span><span class="price">${s.price}₽</span></div>`).join('');
-    document.getElementById('profileContent').innerHTML = `
-        ${ih}<div class="profile-detail">
-        <h2>${g.name}</h2><div class="city">📍 ${g.city}</div><p class="desc">${g.desc}</p>
-        <div class="section-title">Характеристики</div><div class="profile-stats-grid">
-        <div class="profile-stat"><div class="label">Рост</div><div class="value">${g.height} см</div></div>
-        <div class="profile-stat"><div class="label">Вес</div><div class="value">${g.weight} кг</div></div>
-        <div class="profile-stat"><div class="label">Грудь</div><div class="value">${g.breast}</div></div>
-        <div class="profile-stat"><div class="label">Возраст</div><div class="value">${g.age} лет</div></div></div>
-        <div class="section-title">Предпочтения</div><p class="desc">${g.prefs}</p>
-        <div class="section-title">Услуги</div><div class="profile-services">${sH}</div>
-        <div class="profile-payment">💰 Оплата девушкам в руки</div>
-        <button class="profile-order-btn" onclick="orderGirl('${g._id}');closeProfileModal()">Заказать</button></div>`;
-    document.getElementById('profileModal').classList.add('show');
-}
-
-function renderCatalogFilters() {
-    const cities = ['Луганск', 'Стаханов', 'Первомайск'];
-    const c = document.getElementById('catalogFilters');
-    let h = `<button class="filter-btn ${state.currentCityFilter === 'all' ? 'active' : ''}" onclick="filterCity('all')">Все</button>`;
-    cities.forEach(city => { h += `<button class="filter-btn ${state.currentCityFilter === city ? 'active' : ''}" onclick="filterCity('${city}')">${city}</button>`; });
-    c.innerHTML = h;
-}
-
-function filterCity(city) {
-    state.currentCityFilter = city;
-    renderCatalogFilters();
-    renderGirls();
+    if (section === 'admin' && state.user) {
+        loadAdminChats(); loadGirls();
+    }
 }
 
 // === CHAT ===
 function loadChatHistory() {
     if (!state.user) return;
-    apiCall('/api/chat')
-        .then(data => {
-            if (data.messages) {
-                renderMessages(data.messages);
-            } else {
-                renderMessages([]);
-                sendMessageToBot('Привет');
-            }
-        });
+    apiCall('/api/chat').then(data => {
+        if (data.messages && data.messages.length > 0) {
+            renderMessages(data.messages);
+        } else {
+            renderMessages([]);
+            sendMessageToBot('Привет');
+        }
+    }).catch(() => {});
 }
 
 async function sendMessageToBot(text) {
     if (!state.user) return;
     try {
-        const data = await apiCall('/api/chat/send', {
-            method: 'POST',
-            body: JSON.stringify({ text: text || 'Привет' })
-        });
+        const data = await apiCall('/api/chat/send', { method: 'POST', body: JSON.stringify({ text: text || 'Привет' }) });
         renderMessages(data.messages);
     } catch (e) {}
 }
@@ -525,25 +422,16 @@ async function sendMessage() {
     const text = inp.value.trim();
     if (!text || !state.user) return;
     
-    // Optimistic update
-    const container = document.getElementById('chatMessages');
-    container.innerHTML += `<div class="chat-msg user">${esc(text)}</div>`;
-    container.scrollTop = container.scrollHeight;
     inp.value = '';
-    
     try {
-        const data = await apiCall('/api/chat/send', {
-            method: 'POST',
-            body: JSON.stringify({ text })
-        });
+        const data = await apiCall('/api/chat/send', { method: 'POST', body: JSON.stringify({ text }) });
         renderMessages(data.messages);
-    } catch (e) {
-        showToast('Ошибка отправки', 'error');
-    }
+    } catch (e) { showToast('Ошибка отправки', 'error'); }
 }
 
 function renderMessages(messages) {
     const container = document.getElementById('chatMessages');
+    if(!container) return;
     container.innerHTML = '';
     const indicator = document.getElementById('chatIndicator');
     const isWaiting = messages.some(m => m.extra && m.extra.type === 'processing');
@@ -552,13 +440,9 @@ function renderMessages(messages) {
     messages.forEach(msg => {
         const div = document.createElement('div');
         div.className = `chat-msg ${msg.type}`;
-        if (msg.type === 'user') {
-            div.textContent = msg.text;
-        } else if (msg.type === 'bot') {
-            div.innerHTML = formatBotMessage(msg);
-        } else {
-            div.textContent = msg.text;
-        }
+        if (msg.type === 'user') div.textContent = msg.text;
+        else if (msg.type === 'bot') div.innerHTML = formatBotMessage(msg);
+        else div.textContent = msg.text;
         container.appendChild(div);
     });
     container.scrollTop = container.scrollHeight;
@@ -588,11 +472,9 @@ function formatBotMessage(msg) {
 }
 
 function selectService(girlName, serviceName, price) {
-    const text = `${girlName} — ${serviceName}: ${price}₽`;
-    document.getElementById('chatInput').value = text;
+    document.getElementById('chatInput').value = `${girlName} — ${serviceName}: ${price}₽`;
     sendMessage();
 }
-
 function selectGirlByName(name) {
     document.getElementById('chatInput').value = name;
     sendMessage();
@@ -602,269 +484,158 @@ async function orderGirl(id) {
     if (!state.user) { openAuthModal(); return; }
     navigateTo('chat');
     try {
-        const data = await apiCall('/api/chat/init', {
-            method: 'POST',
-            body: JSON.stringify({ girlId: id })
-        });
+        const data = await apiCall('/api/chat/init', { method: 'POST', body: JSON.stringify({ girlId: id }) });
         renderMessages(data.messages);
-    } catch (e) {
-        showToast('Ошибка заказа', 'error');
-    }
+    } catch (e) { showToast('Ошибка заказа', 'error'); }
 }
 
-// === ADMIN ===
-function openSupport() { closeProfileDropdown(); navigateTo('chat'); }
-function openAdmin() { if (state.user.role !== 'admin') return; closeProfileDropdown(); navigateTo('admin'); loadAdminChats(); loadGirls(); }
-function switchAdminTab(tabId) {
+// === ADMIN (Global Functions) ===
+window.openSupport = () => { closeProfileDropdown(); navigateTo('chat'); };
+window.openAdmin = () => { if (state.user.role !== 'admin') return; closeProfileDropdown(); navigateTo('admin'); };
+window.switchAdminTab = (tabId) => {
     document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
     document.querySelector(`.admin-tab[onclick*="${tabId}"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
-}
+};
 
-function renderAdminGirls() {
-    const list = document.getElementById('adminGirlsList');
-    if (state.girls.length === 0) { list.innerHTML = '<div class="empty-state"><p>Нет анкет</p></div>'; return; }
-    list.innerHTML = state.girls.map(g => `<div class="admin-list-item">
-        <div class="info"><h4>${g.name} — ${g.city}</h4><p>📏 ${g.height}см • ⚖️ ${g.weight}кг • 👙 ${g.breast} • 🎂 ${g.age} лет</p></div>
-        <div class="actions"><button class="edit-btn" onclick="editGirl('${g._id}')">✏️</button><button class="delete-btn" onclick="deleteGirl('${g._id}')">🗑️</button></div>
-    </div>`).join('');
-}
-
-function editGirl(id) {
-    const g = state.girls.find(x => x._id == id);
-    if (!g) return;
-    document.getElementById('editGirlId').value = g._id;
-    document.getElementById('admGirlName').value = g.name;
-    document.getElementById('admGirlCity').value = g.city;
-    document.getElementById('admGirlHeight').value = g.height || '';
-    document.getElementById('admGirlWeight').value = g.weight || '';
-    document.getElementById('admGirlBreast').value = g.breast || '';
-    document.getElementById('admGirlAge').value = g.age || '';
-    document.getElementById('admGirlDesc').value = g.desc || '';
-    document.getElementById('admGirlPrefs').value = g.prefs || '';
-    document.getElementById('servicesList').innerHTML = '';
-    tempPhotos = [null, null, null, null];
-    if (g.photos) for(let i=0; i<4 && i<g.photos.length; i++) tempPhotos[i] = g.photos[i];
-    renderPhotoSlots();
-    if (g.services) g.services.forEach(s => addServiceRow(s.name, s.price));
-}
-
-async function saveGirl() {
+window.saveGirl = async () => {
     const editId = document.getElementById('editGirlId').value;
     const name = document.getElementById('admGirlName').value.trim();
     if (!name) return showToast('Введите имя', 'error');
-    
-    const girl = {
-        name,
-        city: document.getElementById('admGirlCity').value,
-        height: document.getElementById('admGirlHeight').value,
-        weight: document.getElementById('admGirlWeight').value,
-        breast: document.getElementById('admGirlBreast').value,
-        age: document.getElementById('admGirlAge').value,
-        desc: document.getElementById('admGirlDesc').value,
-        prefs: document.getElementById('admGirlPrefs').value,
-        services: getServicesFromList(),
-        photos: tempPhotos.filter(p => p !== null)
-    };
-
+    const girl = { name, city: document.getElementById('admGirlCity').value, height: document.getElementById('admGirlHeight').value, weight: document.getElementById('admGirlWeight').value, breast: document.getElementById('admGirlBreast').value, age: document.getElementById('admGirlAge').value, desc: document.getElementById('admGirlDesc').value, prefs: document.getElementById('admGirlPrefs').value, services: getServicesFromList(), photos: tempPhotos.filter(p => p !== null) };
     if (editId) girl._id = editId;
-
     try {
-        await apiCall('/api/girls', {
-            method: 'POST',
-            body: JSON.stringify({ action: editId ? 'update' : 'add', girl })
-        });
-        showToast('Сохранено!', 'success');
-        clearGirlForm();
-        loadGirls();
-        renderAdminGirls();
+        await apiCall('/api/girls', { method: 'POST', body: JSON.stringify({ action: editId ? 'update' : 'add', girl }) });
+        showToast('Сохранено!', 'success'); clearGirlForm(); loadGirls(); renderAdminGirls();
     } catch (e) { showToast('Ошибка', 'error'); }
-}
+};
 
-async function deleteGirl(id) {
+window.editGirl = (id) => {
+    const g = state.girls.find(x => x._id == id); if (!g) return;
+    document.getElementById('editGirlId').value = g._id;
+    document.getElementById('admGirlName').value = g.name; document.getElementById('admGirlCity').value = g.city;
+    document.getElementById('admGirlHeight').value = g.height || ''; document.getElementById('admGirlWeight').value = g.weight || '';
+    document.getElementById('admGirlBreast').value = g.breast || ''; document.getElementById('admGirlAge').value = g.age || '';
+    document.getElementById('admGirlDesc').value = g.desc || ''; document.getElementById('admGirlPrefs').value = g.prefs || '';
+    document.getElementById('servicesList').innerHTML = ''; tempPhotos = [null, null, null, null];
+    if (g.photos) for(let i=0; i<4 && i<g.photos.length; i++) tempPhotos[i] = g.photos[i];
+    renderPhotoSlots(); if (g.services) g.services.forEach(s => addServiceRow(s.name, s.price));
+};
+
+window.deleteGirl = async (id) => {
     if (!confirm('Удалить?')) return;
-    try {
-        await apiCall('/api/girls', { method: 'POST', body: JSON.stringify({ action: 'delete', girl: { _id: id } }) });
-        loadGirls(); renderAdminGirls(); showToast('Удалено', 'success');
-    } catch (e) { showToast('Ошибка', 'error'); }
-}
+    try { await apiCall('/api/girls', { method: 'POST', body: JSON.stringify({ action: 'delete', girl: { _id: id } }) }); loadGirls(); renderAdminGirls(); showToast('Удалено', 'success'); } 
+    catch (e) { showToast('Ошибка', 'error'); }
+};
 
-// Photo Upload Logic
-function uploadPhoto(idx) { document.querySelectorAll('#photoUploadArea .photo-slot input')[idx].click(); }
-function handlePhoto(idx, input) {
-    const file = input.files[0];
-    if (!file) return;
-    // Read as DataURL for local preview (and send to server if needed, but here we use upload endpoint logic conceptually)
-    // For simplicity in this stack, we assume admin uploads happen via local storage logic or separate endpoint.
-    // Since we have a separate upload endpoint in server.js, let's use it.
-    const formData = new FormData();
-    formData.append('photos', file);
-    
-    fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${state.token}` },
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if(data.urls && data.urls[0]) {
-            tempPhotos[idx] = data.urls[0];
-            renderPhotoSlots();
-        }
-    });
-}
-function removePhoto(idx, e) { e.stopPropagation(); tempPhotos[idx] = null; renderPhotoSlots(); }
-function renderPhotoSlots() {
-    const area = document.getElementById('photoUploadArea');
-    let html = '';
+window.clearGirlForm = () => {
+    document.getElementById('editGirlId').value=''; document.getElementById('admGirlName').value=''; document.getElementById('admGirlCity').value='Луганск';
+    document.getElementById('admGirlHeight').value=''; document.getElementById('admGirlWeight').value=''; document.getElementById('admGirlBreast').value='';
+    document.getElementById('admGirlAge').value=''; document.getElementById('admGirlDesc').value=''; document.getElementById('admGirlPrefs').value='';
+    document.getElementById('servicesList').innerHTML=''; tempPhotos = [null,null,null,null]; renderPhotoSlots();
+};
+
+window.uploadPhoto = (idx) => document.querySelectorAll('#photoUploadArea .photo-slot input')[idx].click();
+window.handlePhoto = (idx, input) => {
+    const file = input.files[0]; if (!file) return;
+    const formData = new FormData(); formData.append('photos', file);
+    fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` }, body: formData })
+    .then(r => r.json()).then(data => { if(data.urls && data.urls[0]) { tempPhotos[idx] = data.urls[0]; renderPhotoSlots(); } });
+};
+window.removePhoto = (idx, e) => { e.stopPropagation(); tempPhotos[idx] = null; renderPhotoSlots(); };
+window.renderPhotoSlots = () => {
+    const area = document.getElementById('photoUploadArea'); let html = '';
     for(let i=0; i<4; i++) {
-        if (tempPhotos[i]) {
-            html += `<div class="photo-slot has-photo"><img src="${tempPhotos[i]}"><button class="remove-photo" onclick="removePhoto(${i},event)">✕</button><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(${i},this)"></div>`;
-        } else {
-            html += `<div class="photo-slot" onclick="uploadPhoto(${i})"><span class="placeholder">📷<br>${i+1}</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(${i},this)"></div>`;
-        }
+        if (tempPhotos[i]) html += `<div class="photo-slot has-photo"><img src="${tempPhotos[i]}"><button class="remove-photo" onclick="removePhoto(${i},event)">✕</button><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(${i},this)"></div>`;
+        else html += `<div class="photo-slot" onclick="uploadPhoto(${i})"><span class="placeholder">📷<br>${i+1}</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(${i},this)"></div>`;
     }
     area.innerHTML = html;
-}
-
-function addServiceRow(name='', price='') {
-    const list = document.getElementById('servicesList');
-    const div = document.createElement('div');
-    div.className = 'service-item';
+};
+window.addServiceRow = (name='', price='') => {
+    const list = document.getElementById('servicesList'); const div = document.createElement('div'); div.className = 'service-item';
     div.innerHTML = `<input type="text" class="form-input" placeholder="Название" value="${esc(name)}"><input type="text" class="form-input service-price" placeholder="Цена (₽)" value="${esc(price)}"><button class="remove-service" onclick="this.parentElement.remove()">✕</button>`;
     list.appendChild(div);
-}
-function getServicesFromList() {
-    const items = document.querySelectorAll('#servicesList .service-item');
-    const services = [];
-    items.forEach(item => {
-        const inputs = item.querySelectorAll('.form-input');
-        const name = inputs[0].value.trim();
-        const price = inputs[1].value.trim();
-        if(name) services.push({name, price: price || '0'});
-    });
+};
+window.getServicesFromList = () => {
+    const items = document.querySelectorAll('#servicesList .service-item'); const services = [];
+    items.forEach(item => { const inputs = item.querySelectorAll('.form-input'); const name = inputs[0].value.trim(); const price = inputs[1].value.trim(); if(name) services.push({name, price: price || '0'}); });
     return services;
-}
-function clearGirlForm() {
-    document.getElementById('editGirlId').value='';
-    document.getElementById('admGirlName').value='';
-    document.getElementById('admGirlCity').value='Луганск';
-    document.getElementById('admGirlHeight').value='';
-    document.getElementById('admGirlWeight').value='';
-    document.getElementById('admGirlBreast').value='';
-    document.getElementById('admGirlAge').value='';
-    document.getElementById('admGirlDesc').value='';
-    document.getElementById('admGirlPrefs').value='';
-    document.getElementById('servicesList').innerHTML='';
-    tempPhotos = [null,null,null,null];
-    renderPhotoSlots();
-}
+};
 
-// Admin Chat
-async function loadAdminChats() {
+// Admin Chat Functions
+window.loadAdminChats = async () => {
     try {
         const chats = await apiCall('/api/admin/chats');
         const list = document.getElementById('adminChatList');
         if (chats.length === 0) { list.innerHTML = '<div class="empty-state"><p>Нет чатов</p></div>'; return; }
         list.innerHTML = chats.map(c => {
-            const last = c.messages[c.messages.length-1];
-            const txt = last ? (last.text||'').substring(0,40) : '';
+            const last = c.messages[c.messages.length-1]; const txt = last ? (last.text||'').substring(0,40) : '';
             return `<div class="chat-item ${c.waitingForOperator ? 'new-message' : ''}">
                 <div class="chat-item-header"><h4>👤 ${c.userId}</h4><span class="status ${c.waitingForOperator ? 'waiting' : 'active'}">${c.waitingForOperator ? '⏳ Ждет' : '✅ Активен'}</span></div>
                 <div class="chat-item-preview">${txt}</div>
-                <div class="chat-item-actions"><button class="open-chat" onclick="openAdminChatWith('${c.userId}')">💬 Чат</button><button class="clear-chat" onclick="window.clearChatHistory('${c.userId}')">🗑️</button></div>
+                <div class="chat-item-actions"><button class="open-chat" onclick="window.openAdminChatWith('${c.userId}')">💬 Чат</button><button class="clear-chat" onclick="window.clearChatHistory('${c.userId}')">🗑️</button><button class="delete-btn" onclick="window.deleteChat('${c.userId}')">❌</button></div>
             </div>`;
         }).join('');
     } catch(e) {}
-}
+};
 
-function openAdminChatWith(uid) {
+window.openAdminChatWith = (uid) => {
     state.adminChatWith = uid;
     document.getElementById('adminChatTitle').textContent = '💬 Чат с ' + uid;
     document.getElementById('adminChatModal').classList.add('show');
-    loadAdminChat(uid);
-}
+    window.loadAdminChat(uid);
+};
 
-function loadAdminChat(uid) {
-    // Fetch full chat
-    fetch(`${API_URL}/api/chat`, { headers: { 'Authorization': `Bearer ${state.token}` } }) // Note: This endpoint needs to accept userId or fetch all. 
-    // Actually, let's just use the data from loadAdminChats or specific endpoint.
-    // For simplicity, I'll use the cached data or re-fetch if needed.
-    // Let's assume admin chats list has full data or we fetch specific user chat.
-    // Reusing logic:
+window.loadAdminChat = (uid) => {
     apiCall(`/api/chat?userId=${uid}`).then(data => {
-         const container = document.getElementById('adminChatMessages');
-         container.innerHTML = '';
+         const container = document.getElementById('adminChatMessages'); container.innerHTML = '';
          (data.messages || []).forEach(msg => {
-             const div = document.createElement('div');
-             div.className = `chat-msg ${msg.type}`;
+             const div = document.createElement('div'); div.className = `chat-msg ${msg.type}`;
              if (msg.type === 'user') div.textContent = msg.text;
              else if (msg.type === 'bot') div.innerHTML = formatBotMessage(msg);
              container.appendChild(div);
          });
          container.scrollTop = container.scrollHeight;
     });
-}
+};
 
-window.sendAdminReply = async function() {
-    const inp = document.getElementById('adminChatInput');
-    const text = inp.value.trim();
+window.sendAdminReply = async () => {
+    const inp = document.getElementById('adminChatInput'); const text = inp.value.trim();
     if (!text || !state.adminChatWith) return;
     try {
-        await apiCall('/api/admin/chat/reply', {
-            method: 'POST',
-            body: JSON.stringify({ userId: state.adminChatWith, text })
-        });
-        inp.value = '';
-        loadAdminChat(state.adminChatWith);
-        loadAdminChats();
-        showToast('Ответ отправлен', 'success');
+        await apiCall('/api/admin/chat/reply', { method: 'POST', body: JSON.stringify({ userId: state.adminChatWith, text }) });
+        inp.value = ''; window.loadAdminChat(state.adminChatWith); window.loadAdminChats(); showToast('Ответ отправлен', 'success');
     } catch(e) {}
 };
 
-window.clearChatHistory = async function(uid) {
-    if(!uid) uid = state.adminChatWith;
-    if(!uid) return;
-    try {
-        await apiCall(`/api/admin/chat/${uid}/clear`, { method: 'PUT' });
-        loadAdminChat(uid);
-        loadAdminChats();
-        showToast('Очищено', 'success');
-    } catch(e) {}
+window.clearChatHistory = async (uid) => {
+    if(!uid) uid = state.adminChatWith; if(!uid) return;
+    try { await apiCall(`/api/admin/chat/${uid}/clear`, { method: 'PUT' }); window.loadAdminChat(uid); window.loadAdminChats(); showToast('Очищено', 'success'); } catch(e) {}
 };
 
-window.resetClientBot = function() {
-    if(!state.adminChatWith) return;
-    window.clearChatHistory(state.adminChatWith); // Clearing resets bot state on backend
+window.deleteChat = async (uid) => {
+    if (!confirm('Удалить чат навсегда?')) return;
+    try {
+        await apiCall(`/api/admin/chat/${uid}`, { method: 'DELETE' });
+        if(state.adminChatWith === uid) window.closeAdminChat();
+        window.loadAdminChats();
+        showToast('Чат удалён', 'success');
+    } catch(e) { showToast('Ошибка удаления', 'error'); }
 };
 
-async function saveSiteSettings() {
-    const settings = {
-        mainTitle: document.getElementById('admMainTitle').value,
-        mainSubtitle: document.getElementById('admMainSubtitle').value,
-        title: document.getElementById('admSiteTitle').value,
-        desc: document.getElementById('admSiteDesc').value,
-        phone: document.getElementById('admSitePhone').value
-    };
-    try {
-        await apiCall('/api/settings', { method: 'PUT', body: JSON.stringify(settings) });
-        showToast('Настройки сохранены', 'success');
-        loadSettings();
-    } catch(e) { showToast('Ошибка', 'error'); }
-}
+window.resetClientBot = () => window.clearChatHistory(state.adminChatWith);
+window.closeAdminChat = () => { document.getElementById('adminChatModal').classList.remove('show'); state.adminChatWith = null; };
 
-// === UTILS ===
-function showToast(msg, type) {
-    const t = document.createElement('div');
-    t.className = `toast ${type}`;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
-}
+window.saveSiteSettings = async () => {
+    const settings = { mainTitle: document.getElementById('admMainTitle').value, mainSubtitle: document.getElementById('admMainSubtitle').value, title: document.getElementById('admSiteTitle').value, desc: document.getElementById('admSiteDesc').value, phone: document.getElementById('admSitePhone').value };
+    try { await apiCall('/api/settings', { method: 'PUT', body: JSON.stringify(settings) }); showToast('Настройки сохранены', 'success'); loadSettings(); } catch(e) { showToast('Ошибка', 'error'); }
+};
+
+// === UTILS & MODALS ===
+function showToast(msg, type) { const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg; document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000); }
 function esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
-// === MODALS ===
 function confirmAge() { document.getElementById('ageModal').classList.remove('show'); }
 function denyAge() { window.location.href = 'https://google.com'; }
 function closeAgeModal() { document.getElementById('ageModal').classList.remove('show'); }
@@ -875,7 +646,6 @@ function switchAuthTab(tab) {
     document.getElementById('loginForm').style.display = tab==='login' ? 'block' : 'none';
     document.getElementById('registerForm').style.display = tab==='register' ? 'block' : 'none';
 }
-function openProfileModal() { document.getElementById('profileModal').classList.add('show'); }
 function closeProfileModal() { document.getElementById('profileModal').classList.remove('show'); }
 function openCitiesModal() {
     const list = document.getElementById('citiesList');
@@ -888,22 +658,50 @@ function openCitiesModal() {
 function closeCitiesModal() { document.getElementById('citiesModal').classList.remove('show'); }
 function openPrivacyPolicy() { document.getElementById('privacyModal').classList.add('show'); }
 function closePrivacyPolicy() { document.getElementById('privacyModal').classList.remove('show'); }
-function toggleProfileDropdown() {
-    if (!state.user) { openAuthModal(); return; }
-    document.getElementById('profileDropdown').classList.toggle('show');
-}
+function toggleProfileDropdown() { if (!state.user) { openAuthModal(); return; } document.getElementById('profileDropdown').classList.toggle('show'); }
 function closeProfileDropdown() { document.getElementById('profileDropdown').classList.remove('show'); }
-document.addEventListener('click', e => {
-    const pd = document.getElementById('profileDropdown');
-    if (pd.classList.contains('show') && !pd.contains(e.target) && !e.target.closest('.header-profile-btn')) pd.classList.remove('show');
-});
-function closeAdminChat() {
-    document.getElementById('adminChatModal').classList.remove('show');
-    state.adminChatWith = null;
-}
+document.addEventListener('click', e => { const pd = document.getElementById('profileDropdown'); if (pd.classList.contains('show') && !pd.contains(e.target) && !e.target.closest('.header-profile-btn')) pd.classList.remove('show'); });
 
-// Start
+function renderGirls() {
+    const girls = state.currentCityFilter === 'all' ? state.girls : state.girls.filter(g => g.city === state.currentCityFilter);
+    const grid = document.getElementById('girlsGrid');
+    if (girls.length === 0) { grid.innerHTML = '<div class="empty-state"><div class="icon">😔</div><p>Анкет пока нет</p></div>'; return; }
+    grid.innerHTML = girls.map(g => createGirlCard(g)).join('');
+}
+function createGirlCard(g) {
+    const mp = (g.photos && g.photos[0]) || '';
+    const ih = mp ? `<img class="girl-card-img" src="${mp}" alt="${g.name}">` : '<div class="girl-card-img-placeholder">👩</div>';
+    return `<div class="girl-card" onclick="openProfile('${g._id}')">${ih}<div class="girl-card-info">
+        <div class="girl-card-top"><span class="girl-card-name">${g.name}</span><span class="girl-card-city">${g.city}</span></div>
+        <p class="girl-card-desc">${g.desc}</p>
+        <div class="girl-card-stats"><span class="stat-tag">📏 ${g.height} см</span><span class="stat-tag">⚖️ ${g.weight} кг</span><span class="stat-tag">👙 ${g.breast}</span><span class="stat-tag">🎂 ${g.age} лет</span></div>
+        <div class="girl-card-payment">💰 Оплата девушкам в руки</div>
+        <div class="girl-card-actions"><button class="btn-open" onclick="event.stopPropagation();openProfile('${g._id}')">Открыть анкету</button><button class="btn-order" onclick="event.stopPropagation();orderGirl('${g._id}')">Заказать</button></div>
+    </div></div>`;
+}
+function openProfile(id) {
+    const g = state.girls.find(x => x._id == id); if (!g) return;
+    const mp = (g.photos && g.photos[0]) || '';
+    const ih = mp ? `<img class="profile-modal-img" src="${mp}" alt="${g.name}">` : '<div class="profile-modal-img-placeholder">👩</div>';
+    const sH = (g.services || []).map(s => `<div class="profile-service"><span class="name">${s.name}</span><span class="price">${s.price}₽</span></div>`).join('');
+    document.getElementById('profileContent').innerHTML = `${ih}<div class="profile-detail"><h2>${g.name}</h2><div class="city">📍 ${g.city}</div><p class="desc">${g.desc}</p>
+        <div class="section-title">Характеристики</div><div class="profile-stats-grid">
+        <div class="profile-stat"><div class="label">Рост</div><div class="value">${g.height} см</div></div><div class="profile-stat"><div class="label">Вес</div><div class="value">${g.weight} кг</div></div>
+        <div class="profile-stat"><div class="label">Грудь</div><div class="value">${g.breast}</div></div><div class="profile-stat"><div class="label">Возраст</div><div class="value">${g.age} лет</div></div></div>
+        <div class="section-title">Предпочтения</div><p class="desc">${g.prefs}</p><div class="section-title">Услуги</div><div class="profile-services">${sH}</div>
+        <div class="profile-payment">💰 Оплата девушкам в руки</div><button class="profile-order-btn" onclick="orderGirl('${g._id}');closeProfileModal()">Заказать</button></div>`;
+    document.getElementById('profileModal').classList.add('show');
+}
+function renderCatalogFilters() {
+    const cities = ['Луганск', 'Стаханов', 'Первомайск']; const c = document.getElementById('catalogFilters');
+    let h = `<button class="filter-btn ${state.currentCityFilter === 'all' ? 'active' : ''}" onclick="filterCity('all')">Все</button>`;
+    cities.forEach(city => { h += `<button class="filter-btn ${state.currentCityFilter === city ? 'active' : ''}" onclick="filterCity('${city}')">${city}</button>`; });
+    c.innerHTML = h;
+}
+function filterCity(city) { state.currentCityFilter = city; renderCatalogFilters(); renderGirls(); }
+
 init();
+</script>
 </script>
 </body>
 </html>
