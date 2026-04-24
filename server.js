@@ -10,31 +10,68 @@ const fs = require('fs');
 
 const app = express();
 
-// CORS для Netlify + Render
-app.use(cors({ origin: '*', credentials: true }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ===== CORS =====
+app.use(cors({
+  origin: function(origin, callback) {
+    // Разрешаем запросы без origin (mobile apps, curl)
+    if (!origin) return callback(null, true);
+    
+    // Разрешаем все домены onrender.com
+    if (origin.includes('onrender.com')) {
+      return callback(null, true);
+    }
+    
+    // Для localhost
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 
+// Handle preflight
+app.options('*', cors());
+
+// ===== Middleware =====
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb', parameterLimit: 50000 }));
+
+// ===== File Upload =====
 if (!fs.existsSync('./uploads')) fs.mkdirSync('./uploads');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
 });
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp|gif/;
+    const extname = allowed.test(path.extname(file.originalname).toLowerCase());
+    if (extname) cb(null, true);
+    else cb(new Error('Только изображения'));
+  }
+});
 
+// ===== MongoDB =====
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/babgirl')
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB Error:', err));
 
-// === MODELS ===
+// ===== Models =====
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'client'], default: 'client' }
-});
+}, { timestamps: true });
 const User = mongoose.model('User', UserSchema);
 
 const GirlSchema = new mongoose.Schema({
@@ -56,32 +93,34 @@ const ChatSchema = new mongoose.Schema({
   botEnabled: { type: Boolean, default: true },
   botStep: { type: String, default: 'greet' },
   selectedGirl: mongoose.Schema.Types.Mixed
-});
+}, { timestamps: true });
 const Chat = mongoose.model('Chat', ChatSchema);
 
 const SettingsSchema = new mongoose.Schema({
   mainTitle: String, mainSubtitle: String, title: String, desc: String, phone: String, globalBotEnabled: { type: Boolean, default: true }
-});
+}, { timestamps: true });
 const Settings = mongoose.model('Settings', SettingsSchema);
 
-// === AUTH ===
+// ===== Auth Middleware =====
 const authenticate = (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ message: 'Access denied' });
+  if (!token) return res.status(401).json({ message: 'Нет токена' });
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = jwt.verify(token, process.env.JWT_SECRET || 'default_secret');
     next();
-  } catch (err) { res.status(400).json({ message: 'Invalid token' }); }
+  } catch (err) { 
+    console.error('Token error:', err);
+    res.status(401).json({ message: 'Неверный токен' }); 
+  }
 };
 
 const isAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
+  if (req.user.role !== 'admin') return res.status(403).json({ message: 'Только для админов' });
   next();
 };
 
-// === INIT & ADMIN FIX ===
-async function init() {
-  // Принудительно создаем/обновляем админов с известными паролями
+// ===== Init Data =====
+async function initData() {
   const admins = [
     { username: 'admin', pass: 'admin123' },
     { username: 'operator', pass: 'operator123' }
@@ -92,10 +131,10 @@ async function init() {
     await User.findOneAndUpdate(
       { username: a.username },
       { $set: { password: hash, role: 'admin' } },
-      { upsert: true }
+      { upsert: true, new: true }
     );
   }
-  console.log('✅ Admin accounts ready: admin/admin123 & operator/operator123');
+  console.log('✅ Admin accounts: admin/admin123 & operator/operator123');
 
   if (await Girl.countDocuments() === 0) {
     await Girl.insertMany([
@@ -104,21 +143,43 @@ async function init() {
     ]);
     console.log('✅ Demo girls created');
   }
+  
+  if (!await Settings.findOne()) {
+    await Settings.create({ 
+      mainTitle: 'Анкеты девушек', 
+      mainSubtitle: 'Выберите идеальную компанию', 
+      title: 'BABYGIRL_LNR', 
+      phone: '',
+      globalBotEnabled: true 
+    });
+    console.log('✅ Default settings created');
+  }
 }
-init();
+initData();
 
-// === ROUTES ===
+// ===== ROUTES =====
+
+// Health check
+app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
+
+// Auth
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ message: 'Заполните поля' });
+    
     const exist = await User.findOne({ username });
     if (exist) return res.status(400).json({ message: 'Логин занят' });
+    
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({ username, password: hashed });
-    const token = jwt.sign({ id: user._id, username: user.username, role: user.role }, process.env.JWT_SECRET);
+    
+    const token = jwt.sign({ id: user._id, username: user.username, role: user.role }, process.env.JWT_SECRET || 'default_secret');
     res.json({ token, user: { username: user.username, role: user.role } });
-  } catch (e) { res.status(500).json({ message: 'Ошибка сервера' }); }
+  } catch (e) { 
+    console.error('Register error:', e);
+    res.status(500).json({ message: 'Ошибка сервера' }); 
+  }
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -126,45 +187,79 @@ app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
     if (!user) return res.status(400).json({ message: 'Неверный логин или пароль' });
+    
     const validPass = await bcrypt.compare(password, user.password);
     if (!validPass) return res.status(400).json({ message: 'Неверный логин или пароль' });
-    const token = jwt.sign({ id: user._id, username: user.username, role: user.role }, process.env.JWT_SECRET);
+    
+    const token = jwt.sign({ id: user._id, username: user.username, role: user.role }, process.env.JWT_SECRET || 'default_secret');
     res.json({ token, user: { username: user.username, role: user.role } });
-  } catch (e) { res.status(500).json({ message: 'Ошибка сервера' }); }
+  } catch (e) { 
+    console.error('Login error:', e);
+    res.status(500).json({ message: 'Ошибка сервера' }); 
+  }
 });
 
+// Girls
 app.get('/api/girls', async (req, res) => {
-  try { res.json(await Girl.find().sort({ createdAt: -1 })); } 
-  catch (e) { res.status(500).json([]); }
+  try {
+    const girls = await Girl.find().sort({ createdAt: -1 });
+    res.json(girls);
+  } catch (e) { 
+    console.error('Get girls error:', e);
+    res.status(500).json([]); 
+  }
 });
 
 app.post('/api/girls', authenticate, isAdmin, async (req, res) => {
   try {
     const { action, girl } = req.body;
-    if (action === 'add') res.json(await Girl.create(girl));
-    else if (action === 'update') res.json(await Girl.findByIdAndUpdate(girl._id, girl, { new: true }));
-    else if (action === 'delete') { await Girl.findByIdAndDelete(girl._id); res.json({ success: true }); }
-  } catch (e) { res.status(500).json({ message: 'Ошибка' }); }
+    console.log('Girl action:', action, girl);
+    
+    if (action === 'add') {
+      const newGirl = await Girl.create(girl);
+      return res.json(newGirl);
+    } else if (action === 'update') {
+      const updated = await Girl.findByIdAndUpdate(girl._id, girl, { new: true });
+      return res.json(updated);
+    } else if (action === 'delete') {
+      await Girl.findByIdAndDelete(girl._id);
+      return res.json({ success: true });
+    }
+    res.status(400).json({ message: 'Неверное действие' });
+  } catch (e) { 
+    console.error('Girls CRUD error:', e);
+    res.status(500).json({ message: 'Ошибка: ' + e.message }); 
+  }
 });
 
+// Upload
 app.post('/api/upload', authenticate, isAdmin, upload.array('photos', 4), (req, res) => {
-  const urls = req.files.map(f => `${req.protocol}://${req.get('host')}/uploads/${f.filename}`);
-  res.json({ urls });
+  try {
+    const urls = req.files.map(f => `/uploads/${f.filename}`);
+    console.log('Uploaded files:', urls);
+    res.json({ urls });
+  } catch (e) {
+    console.error('Upload error:', e);
+    res.status(500).json({ message: 'Ошибка загрузки' });
+  }
 });
 
-// === CHAT ===
+// Chat
 app.get('/api/chat', authenticate, async (req, res) => {
   try {
     const chat = await Chat.findOne({ userId: req.user.username });
     res.json(chat || { messages: [] });
-  } catch (e) { res.status(500).json({}); }
+  } catch (e) { 
+    console.error('Get chat error:', e);
+    res.status(500).json({ messages: [] }); 
+  }
 });
 
 app.post('/api/chat/init', authenticate, async (req, res) => {
   try {
     const { girlId } = req.body;
     const girl = await Girl.findById(girlId);
-    if (!girl) return res.status(404).json({ message: 'Girl not found' });
+    if (!girl) return res.status(404).json({ message: 'Девушка не найдена' });
 
     let chat = await Chat.findOne({ userId: req.user.username });
     if (!chat) chat = await Chat.create({ userId: req.user.username, messages: [] });
@@ -181,7 +276,10 @@ app.post('/api/chat/init', authenticate, async (req, res) => {
     );
     await chat.save();
     res.json({ messages: chat.messages });
-  } catch (e) { res.status(500).json({ message: 'Ошибка инициализации' }); }
+  } catch (e) { 
+    console.error('Chat init error:', e);
+    res.status(500).json({ message: 'Ошибка' }); 
+  }
 });
 
 app.post('/api/chat/send', authenticate, async (req, res) => {
@@ -224,7 +322,7 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
         }
       } 
       else if (chat.botStep === 'girl_selected' && chat.selectedGirl) {
-        const service = chat.selectedGirl.services.find(s => lower.includes(s.name.toLowerCase()));
+        const service = chat.selectedGirl.services?.find(s => lower.includes(s.name.toLowerCase()));
         if (service) {
           chat.waitingForOperator = true;
           chat.botStep = 'waiting';
@@ -242,20 +340,28 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
 
     await chat.save();
     res.json({ messages: chat.messages });
-  } catch (e) { res.status(500).json({ message: 'Ошибка чата' }); }
+  } catch (e) { 
+    console.error('Chat send error:', e);
+    res.status(500).json({ message: 'Ошибка' }); 
+  }
 });
 
-// === ADMIN CHAT ===
+// Admin Chat
 app.get('/api/admin/chats', authenticate, isAdmin, async (req, res) => {
-  try { res.json(await Chat.find().sort({ updatedAt: -1 })); } 
-  catch (e) { res.status(500).json([]); }
+  try {
+    const chats = await Chat.find().sort({ updatedAt: -1 });
+    res.json(chats);
+  } catch (e) { 
+    console.error('Get admin chats error:', e);
+    res.status(500).json([]); 
+  }
 });
 
 app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
   try {
     const { userId, text } = req.body;
     const chat = await Chat.findOne({ userId });
-    if (!chat) return res.status(404).json({ message: 'Not found' });
+    if (!chat) return res.status(404).json({ message: 'Чат не найден' });
     
     if (chat.messages.length > 0 && chat.messages[chat.messages.length - 1].extra?.type === 'processing') {
       chat.messages.pop();
@@ -267,39 +373,75 @@ app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
     chat.selectedGirl = null;
     await chat.save();
     res.json({ success: true });
-  } catch (e) { res.status(500).json({ message: 'Ошибка' }); }
+  } catch (e) { 
+    console.error('Admin reply error:', e);
+    res.status(500).json({ message: 'Ошибка' }); 
+  }
 });
 
 app.put('/api/admin/chat/:userId/clear', authenticate, isAdmin, async (req, res) => {
   try {
-    await Chat.findOneAndUpdate({ userId: req.params.userId }, { messages: [], waitingForOperator: false, botStep: 'greet' });
+    await Chat.findOneAndUpdate(
+      { userId: req.params.userId }, 
+      { messages: [], waitingForOperator: false, botStep: 'greet', selectedGirl: null }
+    );
     res.json({ success: true });
-  } catch (e) { res.status(500).json({ message: 'Ошибка' }); }
+  } catch (e) { 
+    console.error('Clear chat error:', e);
+    res.status(500).json({ message: 'Ошибка' }); 
+  }
 });
 
 app.delete('/api/admin/chat/:userId', authenticate, isAdmin, async (req, res) => {
   try {
     await Chat.findOneAndDelete({ userId: req.params.userId });
     res.json({ success: true });
-  } catch (e) { res.status(500).json({ message: 'Ошибка удаления' }); }
+  } catch (e) { 
+    console.error('Delete chat error:', e);
+    res.status(500).json({ message: 'Ошибка' }); 
+  }
 });
 
+// Settings
 app.get('/api/settings', async (req, res) => {
   try {
     let s = await Settings.findOne();
-    if (!s) s = await Settings.create({ mainTitle: 'Анкеты девушек', mainSubtitle: 'Выберите идеальную компанию', title: 'BABYGIRL_LNR', phone: '' });
+    if (!s) s = await Settings.create({ mainTitle: 'Анкеты девушек', mainSubtitle: 'Выберите идеальную компанию', title: 'BABYGIRL_LNR', phone: '', globalBotEnabled: true });
     res.json(s);
-  } catch (e) { res.status(500).json({}); }
+  } catch (e) { 
+    console.error('Get settings error:', e);
+    res.status(500).json({}); 
+  }
 });
 
 app.put('/api/settings', authenticate, isAdmin, async (req, res) => {
   try {
     const s = await Settings.findOneAndUpdate({}, req.body, { upsert: true, new: true });
     res.json(s);
-  } catch (e) { res.status(500).json({ message: 'Ошибка' }); }
+  } catch (e) { 
+    console.error('Update settings error:', e);
+    res.status(500).json({ message: 'Ошибка' }); 
+  }
 });
 
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
 
+// SPA fallback
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+});
+
+// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📱 Local: http://localhost:${PORT}`);
+  console.log(`🌐 Health: http://localhost:${PORT}/api/health`);
+});
