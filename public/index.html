@@ -10,14 +10,17 @@
 :root{--bg-primary:#0a0a0f;--bg-secondary:#12121a;--glass:rgba(255,255,255,0.03);--glass-hover:rgba(255,255,255,0.06);--glass-border:rgba(255,255,255,0.08);--glass-border-hover:rgba(233,30,99,0.3);--accent:#e91e63;--accent2:#ff6090;--accent3:#c2185b;--text:#fff;--text-muted:rgba(255,255,255,0.6);--success:#4caf50;--warning:#ff9800;--danger:#f44336;--gradient:linear-gradient(135deg,#e91e63,#9c27b0,#673ab7);--gradient2:linear-gradient(135deg,#ff6090,#e91e63,#c2185b);}
 html{scroll-behavior:smooth}
 body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* === VIDEO BACKGROUND - ЯРЧЕ === */
 .video-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;overflow:hidden;background:radial-gradient(circle at 10% 20%,rgb(29,13,35) 0%,rgb(10,10,15) 90%)}
-.video-bg video{position:absolute;top:50%;left:50%;min-width:100%;min-height:100%;width:auto;height:auto;transform:translate(-50%,-50%);object-fit:cover;z-index:1;opacity:0.4}
-.video-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,10,15,0.6);z-index:2;backdrop-filter:blur(2px)}
-.video-bg .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.3;z-index:0;animation:orbFloat 20s infinite ease-in-out}
+.video-bg video{position:absolute;top:50%;left:50%;min-width:100%;min-height:100%;width:auto;height:auto;transform:translate(-50%,-50%);object-fit:cover;z-index:1;opacity:0.7}
+.video-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,10,15,0.3);z-index:2;backdrop-filter:blur(2px)}
+.video-bg .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.4;z-index:0;animation:orbFloat 20s infinite ease-in-out}
 .video-bg .orb:nth-child(3){width:400px;height:400px;background:#e91e63;top:-100px;left:-100px;animation-delay:0s}
 .video-bg .orb:nth-child(4){width:300px;height:300px;background:#9c27b0;bottom:-50px;right:-50px;animation-delay:-7s}
 .video-bg .orb:nth-child(5){width:350px;height:350px;background:#673ab7;top:50%;left:50%;animation-delay:-14s}
 @keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(50px,-80px) scale(1.1)}50%{transform:translate(-30px,60px) scale(0.9)}75%{transform:translate(80px,30px) scale(1)}}
+
 .app{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column}
 .header{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(10,10,15,0.85);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border-bottom:1px solid var(--glass-border);height:64px;display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
 .header.scrolled{background:rgba(10,10,15,0.95);box-shadow:0 4px 30px rgba(0,0,0,0.5)}
@@ -49,8 +52,11 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .girls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
 .girl-card{background:rgba(18,18,26,0.65);backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;cursor:pointer;transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275);position:relative}
 .girl-card:hover{transform:translateY(-5px) scale(1.01);box-shadow:0 20px 40px rgba(0,0,0,0.4),0 0 0 1px rgba(233,30,99,0.3);border-color:rgba(233,30,99,0.3)}
-.girl-card-img{width:100%;height:300px;object-fit:cover;display:block}
-.girl-card-img-placeholder{width:100%;height:300px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:4rem;color:rgba(255,255,255,0.05)}
+
+/* === ФОТО - ИСПРАВЛЕНО ДЛЯ МОБИЛЬНЫХ === */
+.girl-card-img{width:100%;height:300px;object-fit:cover;display:block;min-height:300px;background:#1a1a2e}
+.girl-card-img-placeholder{width:100%;height:300px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:4rem;color:rgba(255,255,255,0.05);min-height:300px}
+
 .girl-card-info{padding:16px}
 .girl-card-top{display:flex;justify-content:space-between;align-items:start;margin-bottom:10px}
 .girl-card-name{font-size:1.2rem;font-weight:700;color:var(--text)}
@@ -75,8 +81,8 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .modal-header h2{font-size:1.5rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .modal-body{padding:24px}
 .profile-modal{max-width:700px}
-.profile-modal-img{width:100%;height:350px;object-fit:cover;border-radius:24px 24px 0 0}
-.profile-modal-img-placeholder{width:100%;height:350px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:24px 24px 0 0;display:flex;align-items:center;justify-content:center;font-size:5rem;color:rgba(255,255,255,0.05)}
+.profile-modal-img{width:100%;height:350px;object-fit:cover;border-radius:24px 24px 0 0;min-height:350px;background:#1a1a2e}
+.profile-modal-img-placeholder{width:100%;height:350px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:24px 24px 0 0;display:flex;align-items:center;justify-content:center;font-size:5rem;color:rgba(255,255,255,0.05);min-height:350px}
 .profile-detail{padding:24px}
 .profile-detail h2{font-size:1.8rem;font-weight:900;margin-bottom:4px}
 .profile-detail .city{color:var(--accent2);font-weight:600;margin-bottom:16px}
@@ -233,8 +239,44 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .admin-chat-modal{max-width:700px;height:85vh;display:flex;flex-direction:column}
 .admin-chat-messages{flex:1;overflow-y:auto;padding:0 20px 16px;display:flex;flex-direction:column;gap:10px}
 .admin-chat-input-wrap{padding:0 20px 20px;display:flex;gap:10px}
-@media(max-width:768px){.header{height:58px;padding:0 12px;gap:8px}.header-logo .logo-heart{width:28px;height:28px}.header-logo .logo-text{font-size:0.8rem}.header-center{flex:1;justify-content:center;overflow:hidden}.header-nav{gap:1px;justify-content:center}.header-nav .nav-btn{font-size:0.7rem;padding:5px 7px}.header-profile-btn{width:34px;height:34px;font-size:1rem}.profile-dropdown{top:50px;right:12px}.main{padding-top:68px}.chat-container{height:calc(100vh - 68px)}.girls-grid{grid-template-columns:1fr}.girl-card-img,.girl-card-img-placeholder{height:240px}.profile-modal-img,.profile-modal-img-placeholder{height:260px}.profile-stats-grid{grid-template-columns:repeat(2,1fr)}.chat-msg{max-width:90%}.modal{border-radius:20px;margin:10px;max-height:92vh}.modal-header{padding:18px 18px 0}.modal-body{padding:18px}.age-modal .age-buttons{flex-direction:column}.admin-row{flex-direction:column}.admin-row .form-group{min-width:100%}.catalog-header h1{font-size:1.6rem}.photo-slot{width:80px;height:80px}.admin-tabs{gap:2px;padding:3px}.admin-tab{padding:10px 12px;font-size:0.8rem;min-width:90px}}
-@media(max-width:400px){.header-logo .logo-text{font-size:0.72rem}.header-nav .nav-btn{font-size:0.65rem;padding:4px 5px}.header-logo .logo-heart{width:24px;height:24px}.header-profile-btn{width:32px;height:32px}.header-center{margin:0 4px}.photo-slot{width:70px;height:70px}}
+
+/* === МОБИЛЬНАЯ АДАПТАЦИЯ - ИСПРАВЛЕНА === */
+@media(max-width:768px){
+    .header{height:58px;padding:0 12px;gap:8px}
+    .header-logo .logo-heart{width:28px;height:28px}
+    .header-logo .logo-text{font-size:0.8rem}
+    .header-center{flex:1;justify-content:center;overflow:hidden}
+    .header-nav{gap:1px;justify-content:center}
+    .header-nav .nav-btn{font-size:0.7rem;padding:5px 7px}
+    .header-profile-btn{width:34px;height:34px;font-size:1rem}
+    .profile-dropdown{top:50px;right:12px}
+    .main{padding-top:68px}
+    .chat-container{height:calc(100vh - 68px)}
+    .girls-grid{grid-template-columns:1fr}
+    /* Фото на мобильных */
+    .girl-card-img,.girl-card-img-placeholder{height:240px;min-height:240px}
+    .profile-modal-img,.profile-modal-img-placeholder{height:260px;min-height:260px}
+    .profile-stats-grid{grid-template-columns:repeat(2,1fr)}
+    .chat-msg{max-width:90%}
+    .modal{border-radius:20px;margin:10px;max-height:92vh}
+    .modal-header{padding:18px 18px 0}
+    .modal-body{padding:18px}
+    .age-modal .age-buttons{flex-direction:column}
+    .admin-row{flex-direction:column}
+    .admin-row .form-group{min-width:100%}
+    .catalog-header h1{font-size:1.6rem}
+    .photo-slot{width:80px;height:80px}
+    .admin-tabs{gap:2px;padding:3px}
+    .admin-tab{padding:10px 12px;font-size:0.8rem;min-width:90px}
+}
+@media(max-width:400px){
+    .header-logo .logo-text{font-size:0.72rem}
+    .header-nav .nav-btn{font-size:0.65rem;padding:4px 5px}
+    .header-logo .logo-heart{width:24px;height:24px}
+    .header-profile-btn{width:32px;height:32px}
+    .header-center{margin:0 4px}
+    .photo-slot{width:70px;height:70px}
+}
 .empty-state{text-align:center;padding:40px;color:var(--text-muted)}.empty-state .icon{font-size:3rem;margin-bottom:12px}
 </style>
 </head>
@@ -701,7 +743,6 @@ function renderCatalogFilters() {
 function filterCity(city) { state.currentCityFilter = city; renderCatalogFilters(); renderGirls(); }
 
 init();
-</script>
 </script>
 </body>
 </html>
