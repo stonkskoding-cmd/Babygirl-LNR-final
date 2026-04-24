@@ -733,6 +733,24 @@ function renderCatalogFilters() {
 }
 function filterCity(city) { state.currentCityFilter = city; renderCatalogFilters(); renderGirls(); }
 
+window.renderAdminGirls = () => {
+    const list = document.getElementById('adminGirlsList');
+    if (!list) return;
+    if (!state.girls || state.girls.length === 0) {
+        list.innerHTML = '<div class="empty-state"><p>Анкет нет</p></div>';
+        return;
+    }
+    list.innerHTML = state.girls.map(g => `
+        <div class="admin-list-item">
+            <div class="item-info"><strong>${g.name}</strong> — ${g.city}</div>
+            <div class="item-actions">
+                <button class="admin-btn secondary" onclick="editGirl('${g._id}')">✏️</button>
+                <button class="admin-btn danger" onclick="deleteGirl('${g._id}')">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+};
+
 init();
 </script>
 </body>
