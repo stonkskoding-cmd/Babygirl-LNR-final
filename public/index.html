@@ -11,7 +11,7 @@
 html{scroll-behavior:smooth}
 body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-/* === VIDEO BACKGROUND - ЯРЧЕ === */
+/* VIDEO BACKGROUND - ЯРЧЕ */
 .video-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;overflow:hidden;background:radial-gradient(circle at 10% 20%,rgb(29,13,35) 0%,rgb(10,10,15) 90%)}
 .video-bg video{position:absolute;top:50%;left:50%;min-width:100%;min-height:100%;width:auto;height:auto;transform:translate(-50%,-50%);object-fit:cover;z-index:1;opacity:0.7}
 .video-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,10,15,0.3);z-index:2;backdrop-filter:blur(2px)}
@@ -22,7 +22,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 @keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(50px,-80px) scale(1.1)}50%{transform:translate(-30px,60px) scale(0.9)}75%{transform:translate(80px,30px) scale(1)}}
 
 .app{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column}
-.header{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(10,10,15,0.85);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border-bottom:1px solid var(--glass-border);height:64px;display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
+.header{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(10,10,15,0.9);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border-bottom:1px solid var(--glass-border);height:64px;display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
 .header.scrolled{background:rgba(10,10,15,0.95);box-shadow:0 4px 30px rgba(0,0,0,0.5)}
 .header-logo{display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:pointer;min-width:0}
 .header-logo .logo-heart{width:32px;height:32px;flex-shrink:0}
@@ -50,13 +50,10 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .filter-btn:hover{border-color:var(--accent);color:var(--text)}
 .filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 15px rgba(233,30,99,0.3)}
 .girls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
-.girl-card{background:rgba(18,18,26,0.65);backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;cursor:pointer;transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275);position:relative}
+.girl-card{background:rgba(18,18,26,0.8);backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);border:1px solid rgba(255,255,255,0.1);border-radius:20px;overflow:hidden;cursor:pointer;transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275);position:relative}
 .girl-card:hover{transform:translateY(-5px) scale(1.01);box-shadow:0 20px 40px rgba(0,0,0,0.4),0 0 0 1px rgba(233,30,99,0.3);border-color:rgba(233,30,99,0.3)}
-
-/* === ФОТО - ИСПРАВЛЕНО ДЛЯ МОБИЛЬНЫХ === */
-.girl-card-img{width:100%;height:300px;object-fit:cover;display:block;min-height:300px;background:#1a1a2e}
-.girl-card-img-placeholder{width:100%;height:300px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:4rem;color:rgba(255,255,255,0.05);min-height:300px}
-
+.girl-card-img{width:100%;height:300px;object-fit:cover;display:block;background:#1a1a2e}
+.girl-card-img-placeholder{width:100%;height:300px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:4rem;color:rgba(255,255,255,0.05)}
 .girl-card-info{padding:16px}
 .girl-card-top{display:flex;justify-content:space-between;align-items:start;margin-bottom:10px}
 .girl-card-name{font-size:1.2rem;font-weight:700;color:var(--text)}
@@ -70,7 +67,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .btn-order:hover{transform:scale(1.02);box-shadow:0 5px 15px rgba(233,30,99,0.4)}
 .btn-open{flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text);padding:10px;border-radius:10px;font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.3s}
 .btn-open:hover{border-color:var(--accent);color:var(--accent);background:rgba(233,30,99,0.1)}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;animation:overlayIn 0.3s ease}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;animation:overlayIn 0.3s ease}
 .modal-overlay.show{display:flex}
 @keyframes overlayIn{from{opacity:0}to{opacity:1}}
 .modal{background:#15151e;border:1px solid var(--glass-border);border-radius:24px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:modalIn 0.4s ease;box-shadow:0 25px 50px rgba(0,0,0,0.5)}
@@ -81,8 +78,8 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .modal-header h2{font-size:1.5rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .modal-body{padding:24px}
 .profile-modal{max-width:700px}
-.profile-modal-img{width:100%;height:350px;object-fit:cover;border-radius:24px 24px 0 0;min-height:350px;background:#1a1a2e}
-.profile-modal-img-placeholder{width:100%;height:350px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:24px 24px 0 0;display:flex;align-items:center;justify-content:center;font-size:5rem;color:rgba(255,255,255,0.05);min-height:350px}
+.profile-modal-img{width:100%;height:350px;object-fit:cover;border-radius:24px 24px 0 0;background:#1a1a2e}
+.profile-modal-img-placeholder{width:100%;height:350px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:24px 24px 0 0;display:flex;align-items:center;justify-content:center;font-size:5rem;color:rgba(255,255,255,0.05)}
 .profile-detail{padding:24px}
 .profile-detail h2{font-size:1.8rem;font-weight:900;margin-bottom:4px}
 .profile-detail .city{color:var(--accent2);font-weight:600;margin-bottom:16px}
@@ -112,16 +109,16 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .form-btn:hover{transform:scale(1.02);box-shadow:0 5px 20px rgba(233,30,99,0.4)}
 .policy-link{display:block;text-align:center;margin-top:12px;color:var(--accent2);font-size:0.8rem;cursor:pointer;text-decoration:underline}
 .chat-container{display:flex;flex-direction:column;height:calc(100vh - 74px);max-width:800px;margin:0 auto}
-.chat-header{padding:16px 20px;background:rgba(18,18,26,0.8);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.chat-header{padding:16px 20px;background:rgba(18,18,26,0.9);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 .chat-header h3{font-weight:700}
-.chat-messages{flex:1;overflow-y:auto;padding:20px;background:rgba(0,0,0,0.2);border:1px solid var(--glass-border);border-radius:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px}
+.chat-messages{flex:1;overflow-y:auto;padding:20px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px}
 .chat-msg{max-width:85%;padding:14px 18px;border-radius:18px;font-size:0.9rem;line-height:1.5;animation:msgIn 0.3s ease;word-wrap:break-word}
 @keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.chat-msg.bot{background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.2);align-self:flex-start;border-bottom-left-radius:4px}
-.chat-msg.user{background:rgba(103,58,183,0.2);border:1px solid rgba(103,58,183,0.3);align-self:flex-end;border-bottom-right-radius:4px}
+.chat-msg.bot{background:rgba(233,30,99,0.15);border:1px solid rgba(233,30,99,0.3);align-self:flex-start;border-bottom-left-radius:4px}
+.chat-msg.user{background:rgba(103,58,183,0.25);border:1px solid rgba(103,58,183,0.4);align-self:flex-end;border-bottom-right-radius:4px}
 .chat-msg.system{background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.2);align-self:center;text-align:center;font-size:0.8rem;color:var(--warning);max-width:100%}
 .chat-msg .msg-profile{margin-top:10px;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;overflow:hidden}
-.chat-msg .msg-profile-img{width:100%;height:150px;object-fit:cover}
+.chat-msg .msg-profile-img{width:100%;height:150px;object-fit:cover;background:#1a1a2e}
 .chat-msg .msg-profile-img-placeholder{width:100%;height:150px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:2rem;color:rgba(255,255,255,0.1)}
 .chat-msg .msg-profile-info{padding:10px}
 .chat-msg .msg-profile-info h4{font-weight:700;margin-bottom:2px}
@@ -131,11 +128,11 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .chat-msg .msg-service-btn{background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text);padding:10px 14px;border-radius:10px;font-family:inherit;font-size:0.85rem;cursor:pointer;transition:all 0.2s;text-align:left}
 .chat-msg .msg-service-btn:hover{border-color:var(--accent);background:rgba(233,30,99,0.1)}
 .chat-input-wrap{display:flex;gap:10px}
-.chat-input{flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:14px;padding:14px 16px;color:var(--text);font-family:inherit;font-size:0.95rem;outline:none;transition:all 0.3s}
+.chat-input{flex:1;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);border-radius:14px;padding:14px 16px;color:var(--text);font-family:inherit;font-size:0.95rem;outline:none;transition:all 0.3s}
 .chat-input:focus{border-color:var(--accent)}
 .chat-send{background:var(--gradient2);border:none;color:#fff;width:50px;height:50px;border-radius:14px;cursor:pointer;font-size:1.2rem;transition:all 0.3s;display:flex;align-items:center;justify-content:center}
 .chat-send:hover{transform:scale(1.05)}
-.chat-indicator{display:none;align-items:center;gap:8px;color:var(--warning);font-size:0.85rem;font-weight:600;padding:8px 16px;background:rgba(255,152,0,0.1);border-radius:10px;margin-bottom:10px;border:1px solid rgba(255,152,0,0.2)}
+.chat-indicator{display:none;align-items:center;gap:8px;color:var(--warning);font-size:0.85rem;font-weight:600;padding:8px 16px;background:rgba(255,152,0,0.15);border-radius:10px;margin-bottom:10px;border:1px solid rgba(255,152,0,0.3)}
 .chat-indicator.show{display:flex}
 .chat-indicator .dot{width:8px;height:8px;background:var(--warning);border-radius:50%;animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
@@ -166,7 +163,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .policy-content h3{color:var(--text);font-size:1rem;margin:16px 0 8px}
 .policy-content p{margin-bottom:10px}
 .footer{background:rgba(10,10,15,0.95);border-top:1px solid var(--glass-border);padding:30px 20px;text-align:center;margin-top:auto}
-.footer .warning{background:rgba(244,67,54,0.1);border:1px solid rgba(244,67,54,0.3);border-radius:12px;padding:12px 20px;display:inline-flex;align-items:center;gap:10px;margin-bottom:16px;font-size:0.85rem;font-weight:600;color:var(--danger)}
+.footer .warning{background:rgba(244,67,54,0.15);border:1px solid rgba(244,67,54,0.4);border-radius:12px;padding:12px 20px;display:inline-flex;align-items:center;gap:10px;margin-bottom:16px;font-size:0.85rem;font-weight:600;color:var(--danger)}
 .footer .info{color:var(--text-muted);font-size:0.8rem;line-height:1.6;max-width:600px;margin:0 auto}
 .toast{position:fixed;bottom:20px;right:20px;background:#1a1a24;border:1px solid var(--glass-border);border-radius:12px;padding:14px 20px;font-size:0.9rem;z-index:3000;animation:toastIn 0.4s ease;box-shadow:0 10px 30px rgba(0,0,0,0.5);color:var(--text)}
 @keyframes toastIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -240,7 +237,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .admin-chat-messages{flex:1;overflow-y:auto;padding:0 20px 16px;display:flex;flex-direction:column;gap:10px}
 .admin-chat-input-wrap{padding:0 20px 20px;display:flex;gap:10px}
 
-/* === МОБИЛЬНАЯ АДАПТАЦИЯ - ИСПРАВЛЕНА === */
+/* MOBILE FIX - ФОТО ОТОБРАЖАЮТСЯ */
 @media(max-width:768px){
     .header{height:58px;padding:0 12px;gap:8px}
     .header-logo .logo-heart{width:28px;height:28px}
@@ -253,9 +250,9 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
     .main{padding-top:68px}
     .chat-container{height:calc(100vh - 68px)}
     .girls-grid{grid-template-columns:1fr}
-    /* Фото на мобильных */
-    .girl-card-img,.girl-card-img-placeholder{height:240px;min-height:240px}
-    .profile-modal-img,.profile-modal-img-placeholder{height:260px;min-height:260px}
+    .girl-card-img,.girl-card-img-placeholder{height:280px !important; min-height:280px}
+    .profile-modal-img,.profile-modal-img-placeholder{height:300px !important; min-height:300px}
+    .chat-msg .msg-profile-img{height:180px !important; min-height:180px}
     .profile-stats-grid{grid-template-columns:repeat(2,1fr)}
     .chat-msg{max-width:90%}
     .modal{border-radius:20px;margin:10px;max-height:92vh}
@@ -276,6 +273,8 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
     .header-profile-btn{width:32px;height:32px}
     .header-center{margin:0 4px}
     .photo-slot{width:70px;height:70px}
+    .girl-card-img,.girl-card-img-placeholder{height:250px !important}
+    .profile-modal-img,.profile-modal-img-placeholder{height:250px !important}
 }
 .empty-state{text-align:center;padding:40px;color:var(--text-muted)}.empty-state .icon{font-size:3rem;margin-bottom:12px}
 </style>
@@ -311,7 +310,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 
 <script>
 // === CONFIG ===
-// ВАЖНО: Замени этот URL на свой с Render!
+// ВНИМАНИЕ: Замени на свой URL Render!
 const API_URL = 'https://твой-сайт.onrender.com'; 
 
 // === STATE ===
@@ -416,10 +415,7 @@ function updateUIForLoggedUser() {
 // === NAVIGATION & CHAT POLLING ===
 function navigateTo(section) {
     if ((section === 'chat' || section === 'admin') && !state.user) { openAuthModal(); return; }
-    
-    // Очистка интервалов при смене раздела
     if (chatRefreshInterval) { clearInterval(chatRefreshInterval); chatRefreshInterval = null; }
-
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.getElementById('sec-' + section).classList.add('active');
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -427,8 +423,6 @@ function navigateTo(section) {
     if (navBtn) navBtn.classList.add('active');
     state.currentSection = section;
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // Запуск опроса чата
     if (section === 'chat' && state.user) {
         loadChatHistory();
         chatRefreshInterval = setInterval(loadChatHistory, 3000);
@@ -463,7 +457,6 @@ async function sendMessage() {
     const inp = document.getElementById('chatInput');
     const text = inp.value.trim();
     if (!text || !state.user) return;
-    
     inp.value = '';
     try {
         const data = await apiCall('/api/chat/send', { method: 'POST', body: JSON.stringify({ text }) });
@@ -478,7 +471,6 @@ function renderMessages(messages) {
     const indicator = document.getElementById('chatIndicator');
     const isWaiting = messages.some(m => m.extra && m.extra.type === 'processing');
     indicator.classList.toggle('show', isWaiting);
-
     messages.forEach(msg => {
         const div = document.createElement('div');
         div.className = `chat-msg ${msg.type}`;
@@ -605,7 +597,6 @@ window.getServicesFromList = () => {
     return services;
 };
 
-// Admin Chat Functions
 window.loadAdminChats = async () => {
     try {
         const chats = await apiCall('/api/admin/chats');
