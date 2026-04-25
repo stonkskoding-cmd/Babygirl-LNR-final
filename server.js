@@ -309,10 +309,40 @@ app.post('/api/upload', authenticate, isAdmin, upload.array('photos', 4), (req, 
 // Chat - Get current user chat
 app.get('/api/chat', authenticate, async (req, res) => {
   try {
-    const chat = await Chat.findOne({ userId: req.user.username }).lean();
-    res.json(chat || { messages: [], userId: req.user.username });
+    console.log('📬 GET /api/chat - User:', req.user.username);
+    let chat = await Chat.findOne({ userId: req.user.username }).lean();
+    
+    // Если чат пустой (только создан) - автоматически добавляем приветствие от бота
+    if (!chat) {
+      console.log('🆕 Creating new chat for user:', req.user.username);
+      chat = await Chat.create({ 
+        userId: req.user.username, 
+        messages: [],
+        botStep: 'greet',
+        waitingForOperator: false,
+        selectedGirl: null
+      });
+    }
+    
+    // Если чат есть но сообщений нет - добавляем приветственное сообщение
+    if (chat.messages.length === 0) {
+      console.log('💬 Empty chat - adding welcome message');
+      chat.messages.push({
+        type: 'bot',
+        text: 'Здравствуйте! 👋 Добро пожаловать в BABYGIRL_LNR!\nНапишите ваш город (Луганск, Стаханов или Первомайск)',
+        time: new Date()
+      });
+      chat.botStep = 'asking_city';
+      await Chat.updateOne(
+        { userId: req.user.username },
+        { $set: { messages: chat.messages, botStep: 'asking_city' } }
+      );
+    }
+    
+    console.log('✅ Returning chat with', chat.messages.length, 'messages');
+    res.json(chat);
   } catch (e) { 
-    console.error('Get chat error:', e.message);
+    console.error('❌ Get chat error:', e.message);
     res.status(500).json({ messages: [], userId: req.user.username }); 
   }
 });
@@ -358,11 +388,13 @@ app.post('/api/chat/init', authenticate, async (req, res) => {
 // Chat - Send message
 app.post('/api/chat/send', authenticate, async (req, res) => {
   try {
+    console.log('📩 NEW MESSAGE - User:', req.user.username, 'Text:', req.body.text);
     const { text } = req.body || {};
     if (!text) return res.status(400).json({ message: 'Текст сообщения пуст' });
     
     let chat = await Chat.findOne({ userId: req.user.username });
     if (!chat) {
+      console.log('🆕 Creating new chat for user:', req.user.username);
       chat = await Chat.create({ 
         userId: req.user.username, 
         messages: [],
@@ -428,9 +460,10 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
     }
 
     await chat.save();
+    console.log('💬 CHAT SAVED - Total messages:', chat.messages.length, 'Waiting for operator:', chat.waitingForOperator);
     res.json({ messages: chat.messages || [] });
   } catch (e) { 
-    console.error('Chat send error:', e.message);
+    console.error('❌ Chat send error:', e.message);
     res.status(500).json({ message: 'Ошибка отправки сообщения' }); 
   }
 });
@@ -438,10 +471,20 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
 // Admin - Get all chats
 app.get('/api/admin/chats', authenticate, isAdmin, async (req, res) => {
   try {
+    console.log('📋 ADMIN CHATS REQUEST - User:', req.user.username);
     const chats = await Chat.find().sort({ updatedAt: -1 }).lean();
+    console.log('📦 FOUND CHATS:', chats.length);
+    if (chats.length > 0) {
+      console.log('📊 FIRST CHAT SAMPLE:', JSON.stringify({
+        userId: chats[0]?.userId,
+        messagesCount: chats[0]?.messages?.length,
+        waitingForOperator: chats[0]?.waitingForOperator,
+        lastMessage: chats[0]?.messages?.[chats[0]?.messages?.length - 1]?.text?.substring(0, 50)
+      }, null, 2));
+    }
     res.json(chats || []);
   } catch (e) { 
-    console.error('Get admin chats error:', e.message);
+    console.error('❌ Get admin chats error:', e.message);
     res.status(500).json([]); 
   }
 });

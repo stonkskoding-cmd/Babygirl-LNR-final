@@ -434,14 +434,18 @@ function navigateTo(section) {
 // === CHAT ===
 function loadChatHistory() {
     if (!state.user) return;
+    console.log('📡 Loading chat history for:', state.user.username);
     apiCall('/api/chat').then(data => {
+        console.log('✅ Chat loaded, messages:', data.messages?.length || 0);
         if (data.messages && data.messages.length > 0) {
             renderMessages(data.messages);
         } else {
+            // Чат пустой - рендерим пустой список, приветствие добавится на бэкенде при следующем запросе
             renderMessages([]);
-            sendMessageToBot('Привет');
         }
-    }).catch(() => {});
+    }).catch(err => {
+        console.error('❌ Load chat error:', err);
+    });
 }
 
 async function sendMessageToBot(text) {
@@ -598,18 +602,30 @@ window.getServicesFromList = () => {
 
 window.loadAdminChats = async () => {
     try {
+        console.log('📡 Fetching admin chats...');
         const chats = await apiCall('/api/admin/chats');
+        console.log('✅ Received admin chats:', chats.length);
         const list = document.getElementById('adminChatList');
-        if (chats.length === 0) { list.innerHTML = '<div class="empty-state"><p>Нет чатов</p></div>'; return; }
+        if (chats.length === 0) { 
+            console.log('ℹ️ No chats found');
+            list.innerHTML = '<div class="empty-state"><p>Нет чатов</p></div>'; 
+            return; 
+        }
         list.innerHTML = chats.map(c => {
-            const last = c.messages[c.messages.length-1]; const txt = last ? (last.text||'').substring(0,40) : '';
-            return `<div class="chat-item ${c.waitingForOperator ? 'new-message' : ''}">
-                <div class="chat-item-header"><h4>👤 ${c.userId}</h4><span class="status ${c.waitingForOperator ? 'waiting' : 'active'}">${c.waitingForOperator ? '⏳ Ждет' : '✅ Активен'}</span></div>
-                <div class="chat-item-preview">${txt}</div>
+            const last = c.messages[c.messages.length-1]; 
+            const txt = last ? (last.text||'').substring(0,40) : '';
+            const status = c.waitingForOperator ? '⏳ Ждет' : '✅ Активен';
+            const statusClass = c.waitingForOperator ? 'waiting' : 'active';
+            const newMsgClass = c.waitingForOperator ? 'new-message' : '';
+            return `<div class="chat-item ${newMsgClass}">
+                <div class="chat-item-header"><h4>👤 ${c.userId}</h4><span class="status ${statusClass}">${status}</span></div>
+                <div class="chat-item-preview">${txt || '(пусто)'}</div>
                 <div class="chat-item-actions"><button class="open-chat" onclick="window.openAdminChatWith('${c.userId}')">💬 Чат</button><button class="clear-chat" onclick="window.clearChatHistory('${c.userId}')">🗑️</button><button class="delete-btn" onclick="window.deleteChat('${c.userId}')">❌</button></div>
             </div>`;
         }).join('');
-    } catch(e) {}
+    } catch(e) {
+        console.error('❌ Load admin chats error:', e);
+    }
 };
 
 window.openAdminChatWith = (uid) => {
@@ -620,25 +636,40 @@ window.openAdminChatWith = (uid) => {
 };
 
 window.loadAdminChat = (uid) => {
+    console.log('📡 Loading admin chat with:', uid);
     apiCall(`/api/chat?userId=${uid}`).then(data => {
-         const container = document.getElementById('adminChatMessages'); container.innerHTML = '';
+         console.log('✅ Admin chat loaded, messages:', data.messages?.length || 0);
+         const container = document.getElementById('adminChatMessages'); 
+         container.innerHTML = '';
          (data.messages || []).forEach(msg => {
-             const div = document.createElement('div'); div.className = `chat-msg ${msg.type}`;
+             const div = document.createElement('div'); 
+             div.className = `chat-msg ${msg.type}`;
              if (msg.type === 'user') div.textContent = msg.text;
              else if (msg.type === 'bot') div.innerHTML = formatBotMessage(msg);
              container.appendChild(div);
          });
          container.scrollTop = container.scrollHeight;
+    }).catch(err => {
+        console.error('❌ Load admin chat error:', err);
     });
 };
 
 window.sendAdminReply = async () => {
-    const inp = document.getElementById('adminChatInput'); const text = inp.value.trim();
+    const inp = document.getElementById('adminChatInput'); 
+    const text = inp.value.trim();
     if (!text || !state.adminChatWith) return;
+    console.log('📩 Admin sending reply to:', state.adminChatWith, 'Text:', text);
     try {
         await apiCall('/api/admin/chat/reply', { method: 'POST', body: JSON.stringify({ userId: state.adminChatWith, text }) });
-        inp.value = ''; window.loadAdminChat(state.adminChatWith); window.loadAdminChats(); showToast('Ответ отправлен', 'success');
-    } catch(e) {}
+        inp.value = ''; 
+        window.loadAdminChat(state.adminChatWith); 
+        window.loadAdminChats(); 
+        showToast('Ответ отправлен', 'success');
+        console.log('✅ Admin reply sent');
+    } catch(e) {
+        console.error('❌ Admin reply error:', e);
+        showToast('Ошибка отправки', 'error');
+    }
 };
 
 window.clearChatHistory = async (uid) => {
