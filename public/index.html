@@ -310,8 +310,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 
 <script>
 // === CONFIG ===
-// ВНИМАНИЕ: Замени на свой URL Render!
-const API_URL = 'https://prodakhen.onrender.com';  // Точный URL backend 
+const API_URL = window.location.origin; // Один домен для frontend+backend
 
 // === STATE ===
 let state = {

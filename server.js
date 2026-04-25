@@ -145,40 +145,38 @@ async function initData() {
       return;
     }
 
+    // Generate random admin credentials
+    const randomPass1 = Math.random().toString(36).slice(-10);
+    const randomPass2 = Math.random().toString(36).slice(-10);
     const admins = [
-      { username: 'admin', pass: 'admin123' },
-      { username: 'operator', pass: 'operator123' }
+      { username: 'admin_' + Math.random().toString(36).slice(-6), pass: randomPass1 },
+      { username: 'operator_' + Math.random().toString(36).slice(-6), pass: randomPass2 }
     ];
     
+    let firstRun = true;
     for (const a of admins) {
       const exist = await User.findOne({ username: a.username });
       if (!exist) {
         const hash = await bcrypt.hash(a.pass, 10);
         await User.create({ username: a.username, password: hash, role: 'admin' });
+      } else {
+        firstRun = false;
       }
     }
-    console.log('✅ Admin accounts: admin/admin123 & operator/operator123');
-
-    const girlsCount = await Girl.countDocuments();
-    if (girlsCount === 0) {
-      await Girl.insertMany([
-        { name: 'Алина', city: 'Луганск', photos: [], desc: 'Нежная и романтичная.', height: '168', weight: '52', breast: '2', age: '21', prefs: 'Романтика', services: [{name:'Встреча',price:'3000'},{name:'Свидание',price:'5000'},{name:'Ночь',price:'10000'}] },
-        { name: 'Виктория', city: 'Стаханов', photos: [], desc: 'Яркая брюнетка.', height: '172', weight: '55', breast: '3', age: '23', prefs: 'Танцы', services: [{name:'Встреча',price:'3500'},{name:'Свидание',price:'6000'},{name:'Ночь',price:'12000'}] }
-      ]);
-      console.log('✅ Demo girls created');
-    }
     
-    const settingsCount = await Settings.countDocuments();
-    if (settingsCount === 0) {
-      await Settings.create({ 
-        mainTitle: 'Анкеты девушек', 
-        mainSubtitle: 'Выберите идеальную компанию', 
-        title: 'BABYGIRL_LNR', 
-        phone: '',
-        globalBotEnabled: true 
+    // Only print credentials on first run
+    if (firstRun) {
+      console.log('\n' + '='.repeat(50));
+      console.log('🔐 ADMIN CREDENTIALS (SAVE THIS!):');
+      console.log('='.repeat(50));
+      admins.forEach((a, i) => {
+        console.log(`${i+1}. Login: ${a.username}`);
+        console.log(`   Pass: ${a.pass}`);
       });
-      console.log('✅ Default settings created');
+      console.log('='.repeat(50) + '\n');
     }
+
+    // NO demo girls - admin will add real ones
   } catch (err) {
     console.error('❌ Init data error:', err.message);
   }
