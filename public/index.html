@@ -440,7 +440,8 @@ function loadChatHistory() {
         if (data.messages && data.messages.length > 0) {
             renderMessages(data.messages);
         } else {
-            // Чат пустой - рендерим пустой список, приветствие добавится на бэкенде при следующем запросе
+            // Чат пустой - рендерим пустой список
+            // Бэкенд уже добавил приветственное сообщение, поэтому просто ждём следующего polling
             renderMessages([]);
         }
     }).catch(err => {
@@ -603,16 +604,25 @@ window.getServicesFromList = () => {
 window.loadAdminChats = async () => {
     try {
         console.log('📡 Fetching admin chats...');
-        const chats = await apiCall('/api/admin/chats');
-        console.log('✅ Received admin chats:', chats.length);
+        const response = await apiCall('/api/admin/chats');
+        console.log('✅ Raw response:', response);
+        
+        // Обработка ответа - может быть массивом или объектом с data
+        const chats = Array.isArray(response) ? response : (response.data || []);
+        console.log('✅ Processed chats array:', chats.length);
+        
         const list = document.getElementById('adminChatList');
-        if (chats.length === 0) { 
+        if (!list) return;
+        
+        if (!chats || chats.length === 0) { 
             console.log('ℹ️ No chats found');
             list.innerHTML = '<div class="empty-state"><p>Нет чатов</p></div>'; 
             return; 
         }
+        
         list.innerHTML = chats.map(c => {
-            const last = c.messages[c.messages.length-1]; 
+            const msgs = c.messages || [];
+            const last = msgs.length > 0 ? msgs[msgs.length-1] : null;
             const txt = last ? (last.text||'').substring(0,40) : '';
             const status = c.waitingForOperator ? '⏳ Ждет' : '✅ Активен';
             const statusClass = c.waitingForOperator ? 'waiting' : 'active';
@@ -625,14 +635,30 @@ window.loadAdminChats = async () => {
         }).join('');
     } catch(e) {
         console.error('❌ Load admin chats error:', e);
+        const list = document.getElementById('adminChatList');
+        if (list) list.innerHTML = '<div class="empty-state"><p>Ошибка загрузки чатов</p></div>';
     }
 };
+
+
 
 window.openAdminChatWith = (uid) => {
     state.adminChatWith = uid;
     document.getElementById('adminChatTitle').textContent = '💬 Чат с ' + uid;
     document.getElementById('adminChatModal').classList.add('show');
     window.loadAdminChat(uid);
+    
+    // Авто-обновление чата каждые 3 секунды
+    if (window.adminChatInterval) clearInterval(window.adminChatInterval);
+    window.adminChatInterval = setInterval(() => {
+        if (state.adminChatWith) window.loadAdminChat(state.adminChatWith);
+    }, 3000);
+};
+
+window.closeAdminChat = () => {
+    document.getElementById('adminChatModal').classList.remove('show');
+    state.adminChatWith = null;
+    if (window.adminChatInterval) clearInterval(window.adminChatInterval);
 };
 
 window.loadAdminChat = (uid) => {
