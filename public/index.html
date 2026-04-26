@@ -276,6 +276,66 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
     .girl-card-img,.girl-card-img-placeholder{height:250px !important}
     .profile-modal-img,.profile-modal-img-placeholder{height:250px !important}
 }
+
+/* Галерея фото в профиле */
+.profile-photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 10px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+
+.gallery-photo {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.gallery-photo:hover {
+    transform: scale(1.05);
+}
+
+/* Полноразмерное фото (модалка) */
+.fullsize-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 3000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.fullsize-modal.show {
+    display: flex;
+}
+
+.fullsize-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.fullsize-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 40px;
+    color: #fff;
+    cursor: pointer;
+    z-index: 3001;
+}
+
 .empty-state{text-align:center;padding:40px;color:var(--text-muted)}.empty-state .icon{font-size:3rem;margin-bottom:12px}
 </style>
 </head>
@@ -784,17 +844,69 @@ function createGirlCard(g) {
 }
 function openProfile(id) {
     const g = state.girls.find(x => x._id == id); if (!g) return;
-    const mp = (g.photos && g.photos[0]) || '';
-    const ih = mp ? `<img class="profile-modal-img" src="${mp}" alt="${g.name}">` : '<div class="profile-modal-img-placeholder">👩</div>';
+    
+    // Главное фото (первое)
+    const mainPhoto = (g.photos && g.photos[0]) || '';
+    const mainPhotoHtml = mainPhoto 
+        ? `<img class="profile-modal-img" src="${mainPhoto}" alt="${g.name}" onclick="showFullSize(this)">` 
+        : '<div class="profile-modal-img-placeholder">👩</div>';
+    
+    // Галерея всех остальных фото (если их больше 1)
+    let galleryHtml = '';
+    if (g.photos && g.photos.length > 1) {
+        galleryHtml = '<div class="profile-photo-gallery">' + 
+            g.photos.slice(1).map(photo => 
+                `<img src="${photo}" class="gallery-photo" onclick="showFullSize(this)" alt="Photo">`
+            ).join('') + 
+        '</div>';
+    }
+    
     const sH = (g.services || []).map(s => `<div class="profile-service"><span class="name">${s.name}</span><span class="price">${s.price}₽</span></div>`).join('');
-    document.getElementById('profileContent').innerHTML = `${ih}<div class="profile-detail"><h2>${g.name}</h2><div class="city">📍 ${g.city}</div><p class="desc">${g.desc}</p>
-        <div class="section-title">Характеристики</div><div class="profile-stats-grid">
-        <div class="profile-stat"><div class="label">Рост</div><div class="value">${g.height} см</div></div><div class="profile-stat"><div class="label">Вес</div><div class="value">${g.weight} кг</div></div>
-        <div class="profile-stat"><div class="label">Грудь</div><div class="value">${g.breast}</div></div><div class="profile-stat"><div class="label">Возраст</div><div class="value">${g.age} лет</div></div></div>
-        <div class="section-title">Предпочтения</div><p class="desc">${g.prefs}</p><div class="section-title">Услуги</div><div class="profile-services">${sH}</div>
-        <div class="profile-payment">💰 Оплата девушкам в руки</div><button class="profile-order-btn" onclick="orderGirl('${g._id}');closeProfileModal()">Заказать</button></div>`;
+    
+    document.getElementById('profileContent').innerHTML = `
+        ${mainPhotoHtml}
+        ${galleryHtml}
+        <div class="profile-detail">
+            <h2>${g.name}</h2>
+            <div class="city">📍 ${g.city}</div>
+            <p class="desc">${g.desc}</p>
+            <div class="section-title">Характеристики</div>
+            <div class="profile-stats-grid">
+                <div class="profile-stat"><div class="label">Рост</div><div class="value">${g.height} см</div></div>
+                <div class="profile-stat"><div class="label">Вес</div><div class="value">${g.weight} кг</div></div>
+                <div class="profile-stat"><div class="label">Грудь</div><div class="value">${g.breast}</div></div>
+                <div class="profile-stat"><div class="label">Возраст</div><div class="value">${g.age} лет</div></div>
+            </div>
+            <div class="section-title">Предпочтения</div>
+            <p class="desc">${g.prefs}</p>
+            <div class="section-title">Услуги</div>
+            <div class="profile-services">${sH}</div>
+            <div class="profile-payment">💰 Оплата девушкам в руки</div>
+            <button class="profile-order-btn" onclick="orderGirl('${g._id}');closeProfileModal()">Заказать</button>
+        </div>
+    `;
     document.getElementById('profileModal').classList.add('show');
 }
+
+// Показать фото на весь экран
+window.showFullSize = function(imgElement) {
+    const modal = document.createElement('div');
+    modal.className = 'fullsize-modal show';
+    modal.onclick = () => modal.remove();
+    
+    const close = document.createElement('span');
+    close.className = 'fullsize-close';
+    close.innerHTML = '&times;';
+    close.onclick = (e) => { e.stopPropagation(); modal.remove(); };
+    
+    const img = document.createElement('img');
+    img.src = imgElement.src;
+    img.onclick = (e) => e.stopPropagation();
+    
+    modal.appendChild(close);
+    modal.appendChild(img);
+    document.body.appendChild(modal);
+};
 function renderCatalogFilters() {
     const cities = ['Луганск', 'Стаханов', 'Первомайск']; const c = document.getElementById('catalogFilters');
     let h = `<button class="filter-btn ${state.currentCityFilter === 'all' ? 'active' : ''}" onclick="filterCity('all')">Все</button>`;
