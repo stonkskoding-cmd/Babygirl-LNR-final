@@ -523,10 +523,45 @@ app.put('/api/admin/chat/:userId/clear', authenticate, isAdmin, async (req, res)
       { userId: req.params.userId }, 
       { $set: { messages: [], waitingForOperator: false, botStep: 'greet', selectedGirl: null } }
     );
+    console.log('🗑️ Chat cleared for user:', req.params.userId);
     res.json({ success: true });
   } catch (e) { 
     console.error('Clear chat error:', e.message);
     res.status(500).json({ message: 'Ошибка очистки' }); 
+  }
+});
+
+// Admin - Complete chat (reset bot, keep history)
+app.put('/api/admin/chat/:userId/complete', authenticate, isAdmin, async (req, res) => {
+  try {
+    const chat = await Chat.findOne({ userId: req.params.userId });
+    if (!chat) return res.status(404).json({ message: 'Чат не найден' });
+    
+    // Add system message
+    chat.messages.push({
+      type: 'system',
+      text: 'Чат завершен оператором. Начните новый диалог.',
+      time: new Date()
+    });
+    
+    await Chat.findOneAndUpdate(
+      { userId: req.params.userId },
+      { 
+        $set: {
+          waitingForOperator: false,
+          botStep: 'greet',
+          selectedGirl: null,
+          botEnabled: true,
+          messages: chat.messages
+        }
+      }
+    );
+    
+    console.log('✅ Chat completed for user:', req.params.userId);
+    res.json({ success: true });
+  } catch (e) { 
+    console.error('Complete chat error:', e.message);
+    res.status(500).json({ message: 'Ошибка завершения' }); 
   }
 });
 

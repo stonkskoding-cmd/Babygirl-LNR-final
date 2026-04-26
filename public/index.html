@@ -787,8 +787,41 @@ window.deleteChat = async (uid) => {
     } catch(e) { showToast('Ошибка удаления', 'error'); }
 };
 
-window.resetClientBot = () => window.clearChatHistory(state.adminChatWith);
-window.closeAdminChat = () => { document.getElementById('adminChatModal').classList.remove('show'); state.adminChatWith = null; };
+window.resetClientBot = async () => {
+    if (!state.adminChatWith) return;
+    try {
+        await apiCall(`/api/admin/chat/${state.adminChatWith}/complete`, { method: 'PUT' });
+        showToast('Чат завершен, бот сброшен', 'success');
+        window.loadAdminChat(state.adminChatWith);
+        window.loadAdminChats();
+    } catch(e) { console.error('Reset bot error:', e); showToast('Ошибка завершения', 'error'); }
+};
+
+window.completeAdminChat = async (userId) => {
+    if (!confirm('Завершить чат с клиентом? Бот будет перезапущен.')) return;
+    try {
+        await apiCall(`/api/admin/chat/${userId}/complete`, { method: 'PUT' });
+        showToast('Чат завершен', 'success');
+        window.loadAdminChats();
+        if (state.adminChatWith === userId) window.closeAdminChat();
+    } catch(e) { console.error('Complete chat error:', e); showToast('Ошибка', 'error'); }
+};
+
+window.clearAdminChat = async (userId) => {
+    if (!confirm('ОЧИСТИТЬ ВСЮ ИСТОРИЮ ЧАТА? Это действие необратимо!')) return;
+    try {
+        await apiCall(`/api/admin/chat/${userId}/clear`, { method: 'PUT' });
+        showToast('Чат очищен', 'success');
+        window.loadAdminChats();
+        if (state.adminChatWith === userId) window.loadAdminChat(userId);
+    } catch(e) { console.error('Clear chat error:', e); showToast('Ошибка', 'error'); }
+};
+
+window.closeAdminChat = () => { 
+    document.getElementById('adminChatModal').classList.remove('show'); 
+    state.adminChatWith = null; 
+    if (window.adminChatInterval) clearInterval(window.adminChatInterval);
+};
 
 window.saveSiteSettings = async () => {
     const settings = { mainTitle: document.getElementById('admMainTitle').value, mainSubtitle: document.getElementById('admMainSubtitle').value, title: document.getElementById('admSiteTitle').value, desc: document.getElementById('admSiteDesc').value, phone: document.getElementById('admSitePhone').value };
