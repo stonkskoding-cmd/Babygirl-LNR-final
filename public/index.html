@@ -529,12 +529,26 @@ async function orderGirl(id) {
 
 // === ADMIN (Global Functions) ===
 window.openSupport = () => { closeProfileDropdown(); navigateTo('chat'); };
-window.openAdmin = () => { if (state.user.role !== 'admin') return; closeProfileDropdown(); navigateTo('admin'); };
+window.openAdmin = () => { 
+    if (state.user.role !== 'admin') return; 
+    closeProfileDropdown(); 
+    navigateTo('admin'); 
+    loadGirls();
+    loadAdminChats(); 
+};
+
 window.switchAdminTab = (tabId) => {
     document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
     document.querySelector(`.admin-tab[onclick*="${tabId}"]`).classList.add('active');
     document.getElementById(tabId).classList.add('active');
+    
+    // Load data when switching tabs
+    if (tabId === 'girls-tab') {
+        loadGirls();
+    } else if (tabId === 'chats-tab') {
+        loadAdminChats();
+    }
 };
 
 window.saveGirl = async () => {
