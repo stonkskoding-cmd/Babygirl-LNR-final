@@ -497,6 +497,49 @@ app.get('/api/dev/reset-passwords', async (req, res) => {
     res.status(500).json({ message: e.message });
   }
 });
+// 🔧 TEMP: Создание/сброс операторов
+app.get('/api/dev/create-operators', async (req, res) => {
+  try {
+    console.log('🔧 Creating operators...');
+    
+    const operators = [
+      { username: 'admin_main', pass: 'Babygirl2024!' },
+      { username: 'operator_01', pass: 'Operator2024!' }
+    ];
+    
+    for (const op of operators) {
+      const hash = await bcrypt.hash(op.pass, 10);
+      
+      // Проверяем существует ли
+      const exists = await User.findOne({ username: op.username });
+      
+      if (exists) {
+        // Обновляем пароль
+        await User.findOneAndUpdate(
+          { username: op.username },
+          { password: hash, role: 'admin' }
+        );
+        console.log(`✅ Updated: ${op.username} / ${op.pass}`);
+      } else {
+        // Создаем нового
+        await User.create({
+          username: op.username,
+          password: hash,
+          role: 'admin'
+        });
+        console.log(`✅ Created: ${op.username} / ${op.pass}`);
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Операторы созданы/обновлены!\nadmin_main / Babygirl2024!\noperator_01 / Operator2024!' 
+    });
+  } catch (e) {
+    console.error('❌ Error:', e);
+    res.status(500).json({ message: e.message });
+  }
+});
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
