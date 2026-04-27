@@ -282,9 +282,26 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
         const cities = ['луганск', 'стаханов', 'первомайск'];
         const city = cities.find(c => lower.includes(c));
         if (city) {
-         const girls = await Girl.find({ 
-  city: { $regex: city, $options: 'i' } 
-});
+        if (city) {
+  const girls = await Girl.find({ 
+    city: { $regex: city, $options: 'i' } 
+  });
+  
+  chat.botStep = 'picking_girl';
+  chat.messages.push({
+    type: 'bot',
+    text: `В городе ${city} найдено анкет: ${girls.length}. Выберите девушку:`,
+    extra: { 
+      type: 'girls_list', 
+      girls: girls.map(g => ({
+        name: g.name,
+        city: g.city,
+        age: g.age,
+        photo: g.photos && g.photos[0] ? g.photos[0] : ''
+      }))
+    }
+  });
+}
           chat.botStep = 'picking_girl';
           chat.messages.push({
             type: 'bot',
@@ -296,9 +313,41 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
         }
       } 
       else if (chat.botStep === 'picking_girl') {
-       const girl = await Girl.findOne({ 
-  name: { $regex: text, $options: 'i' } 
-});
+  const girl = await Girl.findOne({ 
+    name: { $regex: text, $options: 'i' } 
+  });
+  
+  if (girl) {
+    chat.selectedGirl = girl;
+    chat.botStep = 'picking_service';
+    let servicesList = girl.services.map(s => `- ${s.name}: ${s.price}₽`).join('\n');
+    
+    // Отправляем полную анкету
+    chat.messages.push({
+      type: 'bot',
+      text: `Вы выбрали ${girl.name}.\n📍 ${girl.city}\n📏 ${girl.height} см, ⚖️ ${girl.weight} кг\n👙 Грудь: ${girl.breast}\n\n📝 ${girl.desc}\n\nУслуги:\n${servicesList}`,
+      extra: { 
+        type: 'profile', 
+        girl: {
+          name: girl.name,
+          city: girl.city,
+          age: girl.age,
+          height: girl.height,
+          weight: girl.weight,
+          breast: girl.breast,
+          desc: girl.desc,
+          photos: girl.photos,
+          services: girl.services
+        }
+      }
+    });
+  } else {
+    chat.messages.push({ 
+      type: 'bot', 
+      text: 'Девушка не найдена. Попробуйте ввести имя еще раз.' 
+    });
+  }
+}
         if (girl) {
           chat.selectedGirl = girl;
           chat.botStep = 'picking_service';
