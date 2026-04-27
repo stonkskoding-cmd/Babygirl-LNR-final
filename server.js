@@ -282,7 +282,9 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
         const cities = ['луганск', 'стаханов', 'первомайск'];
         const city = cities.find(c => lower.includes(c));
         if (city) {
-          const girls = await Girl.find({ city: new RegExp(city, 'i') });
+         const girls = await Girl.find({ 
+  city: { $regex: city, $options: 'i' } 
+});
           chat.botStep = 'picking_girl';
           chat.messages.push({
             type: 'bot',
@@ -294,7 +296,9 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
         }
       } 
       else if (chat.botStep === 'picking_girl') {
-        const girl = await Girl.findOne({ name: new RegExp(lower, 'i') });
+       const girl = await Girl.findOne({ 
+  name: { $regex: text, $options: 'i' } 
+});
         if (girl) {
           chat.selectedGirl = girl;
           chat.botStep = 'picking_service';
