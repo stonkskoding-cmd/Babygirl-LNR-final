@@ -463,7 +463,40 @@ app.post('/api/settings', authenticate, isAdmin, async (req, res) => {
     res.json({ success: true });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
-
+// 🔧 TEMP: Сброс паролей админов (УДАЛИТЬ ПОСЛЕ ИСПОЛЬЗОВАНИЯ!)
+app.get('/api/dev/reset-passwords', async (req, res) => {
+  try {
+    console.log('🔧 Resetting admin passwords...');
+    
+    const admins = [
+      { username: 'admin_main', pass: 'Babygirl2024!' },
+      { username: 'operator_01', pass: 'Operator2024!' }
+    ];
+    
+    for (const admin of admins) {
+      const hash = await bcrypt.hash(admin.pass, 10);
+      const result = await User.findOneAndUpdate(
+        { username: admin.username },
+        { password: hash },
+        { new: true }
+      );
+      
+      if (result) {
+        console.log(`✅ Password reset for: ${admin.username} / ${admin.pass}`);
+      } else {
+        console.log(`⚠️  User not found: ${admin.username}`);
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Пароли сброшены! Используй:\nadmin_main / Babygirl2024!\noperator_01 / Operator2024!' 
+    });
+  } catch (e) {
+    console.error('❌ Error:', e);
+    res.status(500).json({ message: e.message });
+  }
+});
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
