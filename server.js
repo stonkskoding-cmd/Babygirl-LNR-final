@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');  // ✅ Работает везде
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -13,19 +13,19 @@ const app = express();
 // --- КОНФИГУРАЦИЯ ---
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI;
-const JWT_SECRET = process.env.JWT_SECRET || 'secret_key_change_in_prod';
+const JWT_SECRET = process.env.JWT_SECRET || 'babygirl_secret_key_change_in_prod_123';
 
 if (!MONGODB_URI) {
-  console.error('❌ ОШИБКА: MONGODB_URI не задан!');
+  console.error('❌ ОШИБКА: MONGODB_URI не задан в переменных окружения!');
   process.exit(1);
 }
 
 // --- СОЕДИНЕНИЕ С БД ---
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB подключена'))
+  .then(() => console.log('✅ MongoDB успешно подключена'))
   .catch(err => console.error('❌ Ошибка подключения к MongoDB:', err));
 
-// --- МОДЕЛИ ---
+// --- МОДЕЛИ ДАННЫХ ---
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
@@ -49,7 +49,7 @@ const GirlSchema = new mongoose.Schema({
 const Girl = mongoose.model('Girl', GirlSchema);
 
 const ChatSchema = new mongoose.Schema({
-  userId: { type: String, required: true, unique: true },
+  userId: { type: String, required: true, unique: true }, // username клиента
   messages: [{
     type: { type: String, enum: ['user', 'bot', 'system'] },
     text: String,
@@ -72,7 +72,7 @@ const Settings = mongoose.model('Settings', SettingsSchema);
 
 // --- MIDDLEWARE ---
 app.use(cors({
-  origin: true,
+  origin: true, // Разрешаем все источники (для Render)
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -81,10 +81,12 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Создаем папку uploads если нет
 if (!fs.existsSync('./uploads')) {
   fs.mkdirSync('./uploads', { recursive: true });
 }
 
+// Настройка Multer для загрузки фото
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
@@ -94,7 +96,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ 
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB лимит
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|webp|gif/;
     const extname = allowed.test(path.extname(file.originalname).toLowerCase());
@@ -102,6 +104,7 @@ const upload = multer({
   }
 });
 
+// Middleware аутентификации
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ message: 'Нет токена' });
@@ -116,80 +119,93 @@ const authenticate = (req, res, next) => {
   }
 };
 
+// Middleware проверки админа
 const isAdmin = (req, res, next) => {
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Доступ запрещен' });
+    return res.status(403).json({ message: 'Доступ запрещен: нужен роль админа' });
   }
   next();
 };
 
-// --- ИНИЦИАЛИЗАЦИЯ ДАННЫХ (2 АДМИНА) ---
+// --- ИНИЦИАЛИЗАЦИЯ ДАННЫХ (СОЗДАНИЕ АДМИНОВ) ---
 async function initData() {
   const adminCount = await User.countDocuments({ role: 'admin' });
   
   if (adminCount === 0) {
-    const randomPass1 = Math.random().toString(36).slice(-10);
-    const randomPass2 = Math.random().toString(36).slice(-10);
+    console.log('\n🔐 FIRST RUN: Creating default admin accounts...');
     
+    // Постоянные учетные данные
     const admins = [
-      { username: 'admin_' + Math.random().toString(36).slice(-6), pass: randomPass1 },
-      { username: 'operator_' + Math.random().toString(36).slice(-6), pass: randomPass2 }
+      { username: 'admin_main', pass: 'Babygirl2024!', role: 'admin' },
+      { username: 'operator_01', pass: 'Operator2024!', role: 'admin' }
     ];
 
-    console.log('\n🔐 FIRST RUN: CREATING ADMINS (SAVE THESE!) 🔐');
-    console.log('='.repeat(50));
+    console.log('='.repeat(60));
+    console.log('🔐 ADMIN CREDENTIALS (SAVE THESE!):');
+    console.log('='.repeat(60));
     
     for (const admin of admins) {
       const hash = await bcrypt.hash(admin.pass, 10);
-      await User.create({
-        username: admin.username,
-        password: hash,
-        role: 'admin'
-      });
-      console.log(`Login: ${admin.username}`);
-      console.log(`Pass:  ${admin.pass}`);
-      console.log('-'.repeat(50));
+      try {
+        await User.create({
+          username: admin.username,
+          password: hash,
+          role: admin.role
+        });
+        console.log(`✅ Login: ${admin.username}`);
+        console.log(`   Pass: ${admin.pass}`);
+        console.log('-'.repeat(60));
+      } catch (e) {
+        console.error(`Ошибка создания ${admin.username}:`, e.message);
+      }
     }
-    console.log('='.repeat(50) + '\n');
+    console.log('='.repeat(60));
+    console.log('🚀 Server is ready!\n');
+  } else {
+    console.log('✅ Admins already exist. Skipping creation.');
   }
 }
+
+// Запускаем инициализацию
 initData();
 
 // --- ROUTES ---
 
+// Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Auth
+// Auth: Login
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: 'Неверные данные' });
+      return res.status(401).json({ message: 'Неверный логин или пароль' });
     }
-    const token = jwt.sign({ username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, user: { username: user.username, role: user.role } });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
 });
 
+// Auth: Register (для клиентов)
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { username, password } = req.body;
     if (await User.findOne({ username })) {
-      return res.status(400).json({ message: 'Пользователь существует' });
+      return res.status(400).json({ message: 'Пользователь уже существует' });
     }
     const hash = await bcrypt.hash(password, 10);
     const user = await User.create({ username, password: hash, role: 'client' });
-    const token = jwt.sign({ username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '30d' });
     res.json({ token, user: { username: user.username, role: user.role } });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
 });
 
-// Girls
+// Girls: Get all
 app.get('/api/girls', async (req, res) => {
   try {
     const girls = await Girl.find().sort({ createdAt: -1 });
@@ -197,6 +213,7 @@ app.get('/api/girls', async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
+// Girls: Add/Update/Delete
 app.post('/api/girls', authenticate, isAdmin, async (req, res) => {
   try {
     const { action, girl } = req.body;
@@ -204,7 +221,7 @@ app.post('/api/girls', authenticate, isAdmin, async (req, res) => {
       const newGirl = await Girl.create(girl);
       return res.json(newGirl);
     } else if (action === 'update') {
-      const updated = await Girl.findByIdAndUpdate(girl._id, girl, { new: true });
+      const updated = await Girl.findByIdAndUpdate(girl._id, girl, { new: true, runValidators: true });
       return res.json(updated);
     } else if (action === 'delete') {
       await Girl.findByIdAndDelete(girl._id);
@@ -214,12 +231,18 @@ app.post('/api/girls', authenticate, isAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
+// Upload Photos
 app.post('/api/upload', authenticate, isAdmin, upload.array('photos', 10), (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: 'Файлы не загружены' });
+  }
   const urls = req.files.map(f => `/uploads/${f.filename}`);
   res.json({ urls });
 });
 
-// --- CHAT CLIENT (ИСПРАВЛЕНО: ПРИВЕТСТВИЕ ПЕРВЫМ) ---
+// --- CHAT CLIENT (БОТ) ---
+
+// GET /api/chat - Получить историю или создать чат с приветствием
 app.get('/api/chat', authenticate, async (req, res) => {
   try {
     let chat = await Chat.findOne({ userId: req.user.username });
@@ -236,7 +259,7 @@ app.get('/api/chat', authenticate, async (req, res) => {
         botStep: 'asking_city',
         waitingForOperator: false
       });
-      console.log('💬 New chat created with greeting for:', req.user.username);
+      console.log(`💬 New chat created with greeting for: ${req.user.username}`);
     } else if (chat.messages.length === 0) {
        // Если чат есть но пуст (редкий кейс), добавляем приветствие
        chat.messages.push({
@@ -246,7 +269,6 @@ app.get('/api/chat', authenticate, async (req, res) => {
        });
        chat.botStep = 'asking_city';
        await chat.save();
-       console.log('💬 Greeting added to empty chat for:', req.user.username);
     }
     
     res.json(chat);
@@ -256,6 +278,7 @@ app.get('/api/chat', authenticate, async (req, res) => {
   }
 });
 
+// POST /api/chat/send - Отправить сообщение боту
 app.post('/api/chat/send', authenticate, async (req, res) => {
   try {
     const { text } = req.body;
@@ -267,10 +290,11 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
     
     chat.messages.push({ type: 'user', text, time: new Date() });
     
-    // Логика бота (FSM)
+    // Логика бота (FSM) - работает только если не ждет оператора
     if (!chat.waitingForOperator && chat.botEnabled) {
       const lower = text.toLowerCase();
       
+      // Шаг 1: Выбор города
       if (chat.botStep === 'asking_city' || chat.botStep === 'greet') {
         const cities = ['луганск', 'стаханов', 'первомайск'];
         const city = cities.find(c => lower.includes(c));
@@ -286,6 +310,7 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
           chat.messages.push({ type: 'bot', text: 'Пожалуйста, напишите название города: Луганск, Стаханов или Первомайск.' });
         }
       } 
+      // Шаг 2: Выбор девушки
       else if (chat.botStep === 'picking_girl') {
         const girl = await Girl.findOne({ name: new RegExp(lower, 'i') });
         if (girl) {
@@ -301,6 +326,7 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
           chat.messages.push({ type: 'bot', text: 'Девушка не найдена. Попробуйте ввести имя еще раз.' });
         }
       }
+      // Шаг 3: Выбор услуги
       else if (chat.botStep === 'picking_service' && chat.selectedGirl) {
         const serviceName = lower;
         const service = chat.selectedGirl.services.find(s => s.name.toLowerCase().includes(serviceName));
@@ -317,6 +343,7 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
           chat.messages.push({ type: 'bot', text: 'Услуга не найдена. Напишите точное название из списка.' });
         }
       }
+      // Шаг 4: Ожидание
       else if (chat.botStep === 'waiting_operator') {
         chat.messages.push({ type: 'bot', text: 'Заявка уже передана оператору. Пожалуйста, ожидайте.' });
       }
@@ -331,8 +358,9 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
   }
 });
 
-// --- ADMIN CHATS (ИСПРАВЛЕНО: ПОЛНАЯ ИСТОРИЯ) ---
+// --- ADMIN CHATS (ОПЕРАТОР) ---
 
+// Получить список всех чатов
 app.get('/api/admin/chats', authenticate, isAdmin, async (req, res) => {
   try {
     console.log('📋 Admin requested chats list');
@@ -345,7 +373,7 @@ app.get('/api/admin/chats', authenticate, isAdmin, async (req, res) => {
   }
 });
 
-// КРИТИЧЕСКИ ВАЖНО: Возвращаем ПОЛНЫЙ чат со всеми сообщениями
+// Получить ПОЛНУЮ историю одного чата
 app.get('/api/admin/chat/:userId', authenticate, isAdmin, async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -378,7 +406,7 @@ app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Чат не найден' });
     }
     
-    // Удаляем сообщение "processing" если оно последнее
+    // Удаляем сообщение "processing" если оно последнее (чтобы не висело)
     if (chat.messages.length > 0 && chat.messages[chat.messages.length - 1].extra?.type === 'processing') {
       chat.messages.pop();
     }
@@ -389,7 +417,7 @@ app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
       time: new Date()
     });
     
-    chat.waitingForOperator = false;
+    chat.waitingForOperator = false; // Снимаем флаг ожидания
     chat.updatedAt = new Date();
     await chat.save();
     
@@ -401,7 +429,7 @@ app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
   }
 });
 
-// Завершить чат (сброс бота, сохранение истории)
+// Завершить чат (СБРОС БОТА, история сохраняется)
 app.put('/api/admin/chat/:userId/complete', authenticate, isAdmin, async (req, res) => {
   try {
     const chat = await Chat.findOneAndUpdate(
@@ -409,7 +437,7 @@ app.put('/api/admin/chat/:userId/complete', authenticate, isAdmin, async (req, r
       { 
         $set: {
           waitingForOperator: false,
-          botStep: 'greet',
+          botStep: 'greet', // Сброс на начало
           selectedGirl: null,
           botEnabled: true
         }
@@ -426,21 +454,21 @@ app.put('/api/admin/chat/:userId/complete', authenticate, isAdmin, async (req, r
     });
     await chat.save();
     
-    console.log('✅ Chat completed (bot reset, history saved)');
+    console.log(`✅ Chat completed (bot reset) for ${req.params.userId}`);
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ message: e.message });
   }
 });
 
-// Очистить чат (удаление истории)
+// Очистить чат (УДАЛЕНИЕ ИСТОРИИ)
 app.put('/api/admin/chat/:userId/clear', authenticate, isAdmin, async (req, res) => {
   try {
     await Chat.findOneAndUpdate(
       { userId: req.params.userId },
       { $set: { messages: [], waitingForOperator: false, botStep: 'greet', selectedGirl: null } }
     );
-    console.log('🗑️ Chat cleared (history deleted)');
+    console.log(`🗑️ Chat cleared (history deleted) for ${req.params.userId}`);
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ message: e.message });
@@ -464,6 +492,8 @@ app.post('/api/settings', authenticate, isAdmin, async (req, res) => {
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
+// Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Local: http://localhost:${PORT}`);
 });
