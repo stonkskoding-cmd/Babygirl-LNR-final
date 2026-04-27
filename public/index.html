@@ -965,6 +965,52 @@ window.renderAdminGirls = () => {
         </div>
     `).join('');
 };
+window.loadAdminChat = (uid) => {
+    console.log('📡 Loading admin chat with:', uid);
+    apiCall(`/api/admin/chat/${uid}`).then(data => {
+        console.log('✅ Admin chat loaded, messages:', data.messages?.length || 0);
+        const container = document.getElementById('adminChatMessages'); 
+        container.innerHTML = '';
+        
+        if (!data.messages || data.messages.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>Чат пуст</p></div>';
+            return;
+        }
+        
+        data.messages.forEach(msg => {
+            const div = document.createElement('div'); 
+            div.className = `chat-msg ${msg.type}`;
+            
+            if (msg.type === 'user') {
+                div.textContent = msg.text;
+                div.style.alignSelf = 'flex-end';
+                div.style.background = 'rgba(103,58,183,0.25)';
+            }
+            else if (msg.type === 'bot') {
+                if (msg.text && msg.text.includes('[Оператор]')) {
+                    div.innerHTML = `<strong>👨‍💼 Оператор:</strong><br>${msg.text.replace('[Оператор] ', '')}`;
+                    div.style.alignSelf = 'flex-start';
+                    div.style.background = 'rgba(76,175,80,0.2)';
+                } else {
+                    div.innerHTML = formatBotMessage(msg);
+                    div.style.alignSelf = 'flex-start';
+                }
+            }
+            else if (msg.type === 'system') {
+                div.className = 'chat-msg system';
+                div.textContent = msg.text;
+                div.style.alignSelf = 'center';
+            }
+            
+            container.appendChild(div);
+        });
+        
+        container.scrollTop = container.scrollHeight;
+    }).catch(err => {
+        console.error('❌ Load admin chat error:', err);
+        showToast('Ошибка загрузки чата', 'error');
+    });
+};
 
 init();
 </script>
