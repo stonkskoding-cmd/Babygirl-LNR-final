@@ -1,972 +1,874 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>BABYGIRL_LNR</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg-primary:#0a0a0f;--bg-secondary:#12121a;--glass:rgba(255,255,255,0.03);--glass-hover:rgba(255,255,255,0.06);--glass-border:rgba(255,255,255,0.08);--glass-border-hover:rgba(233,30,99,0.3);--accent:#e91e63;--accent2:#ff6090;--accent3:#c2185b;--text:#fff;--text-muted:rgba(255,255,255,0.6);--success:#4caf50;--warning:#ff9800;--danger:#f44336;--gradient:linear-gradient(135deg,#e91e63,#9c27b0,#673ab7);--gradient2:linear-gradient(135deg,#ff6090,#e91e63,#c2185b);}
-html{scroll-behavior:smooth}
-body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(--text);min-height:100vh;overflow-x:hidden}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BABYGIRL_LNR</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #e91e63;
+      --secondary: #9c27b0;
+      --bg: #0a0a0f;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --text: #ffffff;
+      --text-muted: rgba(255, 255, 255, 0.6);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    /* Видео фон */
+    #video-bg {
+      position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%;
+      z-index: -1; object-fit: cover; opacity: 0.3;
+    }
+    .overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, transparent 0%, #000 100%);
+      z-index: -1; pointer-events: none;
+    }
+    
+    /* Навигация */
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 2rem; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-links button {
+      background: none; border: none; color: var(--text); margin-left: 1.5rem;
+      cursor: pointer; font-size: 1rem; transition: 0.3s;
+    }
+    .nav-links button:hover { color: var(--primary); }
+    
+    /* Контейнер */
+    .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+    
+    /* Карточки */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+    .card {
+      background: var(--card-bg); border-radius: 15px; overflow: hidden;
+      backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+      transition: transform 0.3s; cursor: pointer;
+    }
+    .card:hover { transform: translateY(-5px); }
+    .card img { width: 100%; height: 350px; object-fit: cover; }
+    .card-body { padding: 1rem; }
+    .card-title { font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--primary); }
+    .card-text { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .tag { background: rgba(255,255,255,0.1); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; }
+    .btn {
+      width: 100%; padding: 0.8rem; border: none; border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white; font-weight: 600; cursor: pointer; transition: 0.3s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-outline { background: transparent; border: 1px solid var(--primary); margin-top: 0.5rem; }
+    
+    /* Фильтры */
+    .filters { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .filter-btn {
+      padding: 0.5rem 1.5rem; border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.3); color: white; border-radius: 20px;
+      cursor: pointer; transition: 0.3s;
+    }
+    .filter-btn.active, .filter-btn:hover { background: var(--primary); border-color: var(--primary); }
 
-/* VIDEO BACKGROUND - ЯРЧЕ */
-.video-bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;overflow:hidden;background:radial-gradient(circle at 10% 20%,rgb(29,13,35) 0%,rgb(10,10,15) 90%)}
-.video-bg video{position:absolute;top:50%;left:50%;min-width:100%;min-height:100%;width:auto;height:auto;transform:translate(-50%,-50%);object-fit:cover;z-index:1;opacity:0.7}
-.video-bg::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(10,10,15,0.3);z-index:2;backdrop-filter:blur(2px)}
-.video-bg .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.4;z-index:0;animation:orbFloat 20s infinite ease-in-out}
-.video-bg .orb:nth-child(3){width:400px;height:400px;background:#e91e63;top:-100px;left:-100px;animation-delay:0s}
-.video-bg .orb:nth-child(4){width:300px;height:300px;background:#9c27b0;bottom:-50px;right:-50px;animation-delay:-7s}
-.video-bg .orb:nth-child(5){width:350px;height:350px;background:#673ab7;top:50%;left:50%;animation-delay:-14s}
-@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}25%{transform:translate(50px,-80px) scale(1.1)}50%{transform:translate(-30px,60px) scale(0.9)}75%{transform:translate(80px,30px) scale(1)}}
+    /* Модалки */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: #1a1a2e; padding: 2rem; border-radius: 15px; width: 90%; max-width: 500px;
+      position: relative; max-height: 90vh; overflow-y: auto;
+    }
+    .close-modal { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+    
+    /* Профиль девушки */
+    .profile-modal-img { width: 100%; height: 400px; object-fit: cover; border-radius: 10px; margin-bottom: 1rem; }
+    .profile-photo-gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1rem; }
+    .gallery-photo { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer; }
+    .profile-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .stat-item { background: rgba(255,255,255,0.05); padding: 0.8rem; border-radius: 8px; text-align: center; }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+    .stat-value { font-weight: 600; color: var(--primary); }
 
-.app{position:relative;z-index:10;min-height:100vh;display:flex;flex-direction:column}
-.header{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(10,10,15,0.9);backdrop-filter:blur(15px);-webkit-backdrop-filter:blur(15px);border-bottom:1px solid var(--glass-border);height:64px;display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
-.header.scrolled{background:rgba(10,10,15,0.95);box-shadow:0 4px 30px rgba(0,0,0,0.5)}
-.header-logo{display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:pointer;min-width:0}
-.header-logo .logo-heart{width:32px;height:32px;flex-shrink:0}
-.header-logo .logo-heart svg{width:100%;height:100%}
-.header-logo .logo-text{font-size:0.95rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;line-height:1.2}
-.header-center{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
-.header-nav{display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:nowrap}
-.header-nav .nav-btn{background:transparent;border:none;color:var(--text-muted);font-family:inherit;font-size:0.8rem;font-weight:600;padding:8px 12px;border-radius:10px;cursor:pointer;transition:all 0.3s;position:relative;white-space:nowrap}
-.header-nav .nav-btn:hover{color:var(--text);background:var(--glass)}
-.header-nav .nav-btn.active{color:var(--text);background:var(--glass-hover)}
-.header-nav .nav-btn.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:20px;height:3px;background:var(--gradient);border-radius:4px}
-.header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
-.header-profile-btn{background:var(--glass);border:1px solid var(--glass-border);color:var(--text);width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;font-size:1.1rem;flex-shrink:0;position:relative}
-.header-profile-btn:hover{background:var(--accent);border-color:var(--accent);transform:scale(1.05)}
-.notification-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;border-radius:10px;padding:2px 6px;font-size:0.7rem;font-weight:700;animation:pulse 2s infinite}
-.main{flex:1;padding-top:74px}
-.section{display:none;padding:20px;max-width:1200px;margin:0 auto;animation:fadeIn 0.4s ease}
-.section.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.catalog-header{text-align:center;margin-bottom:30px}
-.catalog-header h1{font-size:2.2rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;text-shadow:0 0 30px rgba(233,30,99,0.2)}
-.catalog-header p{color:var(--text-muted);font-size:0.95rem}
-.catalog-filters{display:flex;gap:10px;justify-content:center;margin-bottom:25px;flex-wrap:wrap}
-.filter-btn{background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);color:var(--text-muted);padding:8px 18px;border-radius:20px;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:600;transition:all 0.3s;backdrop-filter:blur(5px)}
-.filter-btn:hover{border-color:var(--accent);color:var(--text)}
-.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 15px rgba(233,30,99,0.3)}
-.girls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px}
-.girl-card{background:rgba(18,18,26,0.8);backdrop-filter:blur(12px) saturate(150%);-webkit-backdrop-filter:blur(12px) saturate(150%);border:1px solid rgba(255,255,255,0.1);border-radius:20px;overflow:hidden;cursor:pointer;transition:all 0.4s cubic-bezier(0.175,0.885,0.32,1.275);position:relative}
-.girl-card:hover{transform:translateY(-5px) scale(1.01);box-shadow:0 20px 40px rgba(0,0,0,0.4),0 0 0 1px rgba(233,30,99,0.3);border-color:rgba(233,30,99,0.3)}
-.girl-card-img{width:100%;height:300px;object-fit:cover;display:block;background:#1a1a2e}
-.girl-card-img-placeholder{width:100%;height:300px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:4rem;color:rgba(255,255,255,0.05)}
-.girl-card-info{padding:16px}
-.girl-card-top{display:flex;justify-content:space-between;align-items:start;margin-bottom:10px}
-.girl-card-name{font-size:1.2rem;font-weight:700;color:var(--text)}
-.girl-card-city{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:0.8rem;font-weight:600}
-.girl-card-desc{color:var(--text-muted);font-size:0.85rem;line-height:1.4;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.girl-card-stats{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.stat-tag{background:rgba(233,30,99,0.15);color:var(--accent2);padding:4px 8px;border-radius:6px;font-size:0.7rem;font-weight:600;border:1px solid rgba(233,30,99,0.1)}
-.girl-card-payment{background:rgba(76,175,80,0.1);color:var(--success);padding:8px;border-radius:8px;font-size:0.75rem;font-weight:600;text-align:center;margin-bottom:10px;border:1px solid rgba(76,175,80,0.2)}
-.girl-card-actions{display:flex;gap:8px}
-.btn-order{flex:1;background:var(--gradient2);border:none;color:#fff;padding:10px;border-radius:10px;font-family:inherit;font-weight:700;font-size:0.9rem;cursor:pointer;transition:all 0.3s}
-.btn-order:hover{transform:scale(1.02);box-shadow:0 5px 15px rgba(233,30,99,0.4)}
-.btn-open{flex:1;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text);padding:10px;border-radius:10px;font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all 0.3s}
-.btn-open:hover{border-color:var(--accent);color:var(--accent);background:rgba(233,30,99,0.1)}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;animation:overlayIn 0.3s ease}
-.modal-overlay.show{display:flex}
-@keyframes overlayIn{from{opacity:0}to{opacity:1}}
-.modal{background:#15151e;border:1px solid var(--glass-border);border-radius:24px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative;animation:modalIn 0.4s ease;box-shadow:0 25px 50px rgba(0,0,0,0.5)}
-@keyframes modalIn{from{opacity:0;transform:scale(0.95) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.modal-close{position:absolute;top:15px;right:15px;width:36px;height:36px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.1);border-radius:50%;color:var(--text);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;z-index:10}
-.modal-close:hover{background:var(--danger);border-color:var(--danger);transform:rotate(90deg)}
-.modal-header{padding:24px 24px 0;text-align:center}
-.modal-header h2{font-size:1.5rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.modal-body{padding:24px}
-.profile-modal{max-width:700px}
-.profile-modal-img{width:100%;height:350px;object-fit:cover;border-radius:24px 24px 0 0;background:#1a1a2e}
-.profile-modal-img-placeholder{width:100%;height:350px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:24px 24px 0 0;display:flex;align-items:center;justify-content:center;font-size:5rem;color:rgba(255,255,255,0.05)}
-.profile-detail{padding:24px}
-.profile-detail h2{font-size:1.8rem;font-weight:900;margin-bottom:4px}
-.profile-detail .city{color:var(--accent2);font-weight:600;margin-bottom:16px}
-.profile-detail .desc{color:var(--text-muted);line-height:1.6;margin-bottom:20px}
-.profile-detail .section-title{font-weight:700;margin-bottom:10px;color:var(--accent2);font-size:1.1rem}
-.profile-stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
-.profile-stat{background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:12px;text-align:center}
-.profile-stat .label{font-size:0.75rem;color:var(--text-muted);margin-bottom:4px}
-.profile-stat .value{font-size:1rem;font-weight:700;color:var(--accent2)}
-.profile-services{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
-.profile-service{background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all 0.3s}
-.profile-service:hover{border-color:var(--accent);background:rgba(233,30,99,0.1)}
-.profile-service .name{font-weight:600}
-.profile-service .price{color:var(--accent2);font-weight:700}
-.profile-payment{background:rgba(76,175,80,0.1);color:var(--success);padding:12px;border-radius:12px;text-align:center;font-weight:600;margin-bottom:20px;border:1px solid rgba(76,175,80,0.2)}
-.profile-order-btn{width:100%;background:var(--gradient2);border:none;color:#fff;padding:14px;border-radius:14px;font-family:inherit;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s}
-.profile-order-btn:hover{transform:scale(1.02);box-shadow:0 5px 25px rgba(233,30,99,0.4)}
-.auth-modal{max-width:420px}
-.auth-tabs{display:flex;gap:4px;margin-bottom:20px;background:rgba(0,0,0,0.3);border-radius:12px;padding:4px;border:1px solid var(--glass-border)}
-.auth-tab{flex:1;padding:10px;border:none;background:none;color:var(--text-muted);font-family:inherit;font-weight:600;font-size:0.9rem;cursor:pointer;border-radius:10px;transition:all 0.3s}
-.auth-tab.active{background:var(--accent);color:#fff}
-.form-group{margin-bottom:16px}
-.form-group label{display:block;font-size:0.85rem;font-weight:600;margin-bottom:6px;color:var(--text-muted)}
-.form-input{width:100%;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:12px;padding:12px 16px;color:var(--text);font-family:inherit;font-size:0.95rem;transition:all 0.3s;outline:none}
-.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(233,30,99,0.2)}
-.form-btn{width:100%;background:var(--gradient2);border:none;color:#fff;padding:14px;border-radius:12px;font-family:inherit;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s;margin-top:8px}
-.form-btn:hover{transform:scale(1.02);box-shadow:0 5px 20px rgba(233,30,99,0.4)}
-.policy-link{display:block;text-align:center;margin-top:12px;color:var(--accent2);font-size:0.8rem;cursor:pointer;text-decoration:underline}
-.chat-container{display:flex;flex-direction:column;height:calc(100vh - 74px);max-width:800px;margin:0 auto}
-.chat-header{padding:16px 20px;background:rgba(18,18,26,0.9);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
-.chat-header h3{font-weight:700}
-.chat-messages{flex:1;overflow-y:auto;padding:20px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px}
-.chat-msg{max-width:85%;padding:14px 18px;border-radius:18px;font-size:0.9rem;line-height:1.5;animation:msgIn 0.3s ease;word-wrap:break-word}
-@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.chat-msg.bot{background:rgba(233,30,99,0.15);border:1px solid rgba(233,30,99,0.3);align-self:flex-start;border-bottom-left-radius:4px}
-.chat-msg.user{background:rgba(103,58,183,0.25);border:1px solid rgba(103,58,183,0.4);align-self:flex-end;border-bottom-right-radius:4px}
-.chat-msg.system{background:rgba(255,152,0,0.1);border:1px solid rgba(255,152,0,0.2);align-self:center;text-align:center;font-size:0.8rem;color:var(--warning);max-width:100%}
-.chat-msg .msg-profile{margin-top:10px;background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;overflow:hidden}
-.chat-msg .msg-profile-img{width:100%;height:150px;object-fit:cover;background:#1a1a2e}
-.chat-msg .msg-profile-img-placeholder{width:100%;height:150px;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;font-size:2rem;color:rgba(255,255,255,0.1)}
-.chat-msg .msg-profile-info{padding:10px}
-.chat-msg .msg-profile-info h4{font-weight:700;margin-bottom:2px}
-.chat-msg .msg-profile-info .price{color:var(--accent2);font-size:0.85rem}
-.chat-msg .msg-profile-info .pay-note{font-size:0.75rem;color:var(--success);margin-top:4px}
-.chat-msg .msg-services{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-.chat-msg .msg-service-btn{background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);color:var(--text);padding:10px 14px;border-radius:10px;font-family:inherit;font-size:0.85rem;cursor:pointer;transition:all 0.2s;text-align:left}
-.chat-msg .msg-service-btn:hover{border-color:var(--accent);background:rgba(233,30,99,0.1)}
-.chat-input-wrap{display:flex;gap:10px}
-.chat-input{flex:1;background:rgba(0,0,0,0.4);border:1px solid var(--glass-border);border-radius:14px;padding:14px 16px;color:var(--text);font-family:inherit;font-size:0.95rem;outline:none;transition:all 0.3s}
-.chat-input:focus{border-color:var(--accent)}
-.chat-send{background:var(--gradient2);border:none;color:#fff;width:50px;height:50px;border-radius:14px;cursor:pointer;font-size:1.2rem;transition:all 0.3s;display:flex;align-items:center;justify-content:center}
-.chat-send:hover{transform:scale(1.05)}
-.chat-indicator{display:none;align-items:center;gap:8px;color:var(--warning);font-size:0.85rem;font-weight:600;padding:8px 16px;background:rgba(255,152,0,0.15);border-radius:10px;margin-bottom:10px;border:1px solid rgba(255,152,0,0.3)}
-.chat-indicator.show{display:flex}
-.chat-indicator .dot{width:8px;height:8px;background:var(--warning);border-radius:50%;animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-.cities-modal{max-width:360px}
-.cities-list{display:flex;flex-direction:column;gap:10px}
-.city-item{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:16px 20px;cursor:pointer;transition:all 0.3s;display:flex;justify-content:space-between;align-items:center}
-.city-item:hover{border-color:var(--accent);background:rgba(233,30,99,0.1);transform:translateX(5px)}
-.city-item .name{font-weight:700;font-size:1.1rem}
-.city-item .count{color:var(--accent2);font-weight:600;font-size:0.85rem}
-.profile-dropdown{position:absolute;top:56px;right:16px;background:#1a1a24;border:1px solid var(--glass-border);border-radius:16px;padding:8px;min-width:200px;display:none;z-index:100;animation:dropIn 0.3s ease;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
-.profile-dropdown.show{display:block}
-@keyframes dropIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-.profile-dropdown .pd-name{padding:12px 16px;font-weight:700;font-size:0.95rem;border-bottom:1px solid var(--glass-border);color:var(--text)}
-.profile-dropdown .pd-btn{width:100%;padding:12px 16px;background:none;border:none;color:var(--text);font-family:inherit;font-size:0.9rem;cursor:pointer;text-align:left;border-radius:10px;transition:all 0.2s;display:flex;align-items:center;gap:10px}
-.profile-dropdown .pd-btn:hover{background:var(--glass)}
-.profile-dropdown .pd-btn.danger{color:var(--danger)}
-.age-modal{max-width:480px;text-align:center}
-.age-modal .age-icon{font-size:4rem;margin-bottom:16px}
-.age-modal h2{margin-bottom:8px}
-.age-modal p{color:var(--text-muted);font-size:0.9rem;line-height:1.5;margin-bottom:24px}
-.age-buttons{display:flex;gap:12px}
-.age-btn{flex:1;padding:14px;border:none;border-radius:12px;font-family:inherit;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.3s}
-.age-btn.yes{background:var(--gradient2);color:#fff}
-.age-btn.no{background:var(--glass);border:1px solid var(--glass-border);color:var(--text-muted)}
-.age-btn:hover{transform:scale(1.05)}
-.policy-modal{max-width:600px;max-height:80vh}
-.policy-content{color:var(--text-muted);font-size:0.85rem;line-height:1.7;max-height:60vh;overflow-y:auto;padding-right:10px}
-.policy-content h3{color:var(--text);font-size:1rem;margin:16px 0 8px}
-.policy-content p{margin-bottom:10px}
-.footer{background:rgba(10,10,15,0.95);border-top:1px solid var(--glass-border);padding:30px 20px;text-align:center;margin-top:auto}
-.footer .warning{background:rgba(244,67,54,0.15);border:1px solid rgba(244,67,54,0.4);border-radius:12px;padding:12px 20px;display:inline-flex;align-items:center;gap:10px;margin-bottom:16px;font-size:0.85rem;font-weight:600;color:var(--danger)}
-.footer .info{color:var(--text-muted);font-size:0.8rem;line-height:1.6;max-width:600px;margin:0 auto}
-.toast{position:fixed;bottom:20px;right:20px;background:#1a1a24;border:1px solid var(--glass-border);border-radius:12px;padding:14px 20px;font-size:0.9rem;z-index:3000;animation:toastIn 0.4s ease;box-shadow:0 10px 30px rgba(0,0,0,0.5);color:var(--text)}
-@keyframes toastIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.toast.success{border-color:var(--success);color:var(--success)}.toast.error{border-color:var(--danger);color:var(--danger)}
-::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--glass-border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--accent)}
-.admin-tabs{display:flex;gap:4px;margin-bottom:24px;background:rgba(0,0,0,0.3);border-radius:14px;padding:4px;flex-wrap:wrap;border:1px solid var(--glass-border)}
-.admin-tab{flex:1;min-width:120px;padding:12px 16px;border:none;background:none;color:var(--text-muted);font-family:inherit;font-weight:700;font-size:0.9rem;cursor:pointer;border-radius:10px;transition:all 0.3s;text-align:center;position:relative}
-.admin-tab.active{background:var(--gradient2);color:#fff}
-.admin-tab:hover:not(.active){background:rgba(255,255,255,0.05)}
-.admin-tab .badge{position:absolute;top:5px;right:5px;background:var(--danger);color:#fff;border-radius:10px;padding:2px 6px;font-size:0.65rem;font-weight:700}
-.admin-panel{display:none;animation:fadeIn 0.3s ease}
-.admin-panel.active{display:block}
-.admin-section{margin-bottom:24px}
-.admin-section h3{font-size:1.1rem;font-weight:700;margin-bottom:12px;color:var(--accent2);display:flex;align-items:center;gap:8px}
-.admin-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:20px;margin-bottom:16px;backdrop-filter:blur(10px)}
-.admin-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:end}
-.admin-row .form-group{flex:1;min-width:150px;margin-bottom:0}
-.admin-btn{padding:10px 20px;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:all 0.3s;font-size:0.85rem;display:inline-flex;align-items:center;gap:6px}
-.admin-btn.primary{background:var(--gradient2);color:#fff}
-.admin-btn.secondary{background:var(--glass);border:1px solid var(--glass-border);color:var(--text)}
-.admin-btn.danger{background:rgba(244,67,54,0.1);border:1px solid var(--danger);color:var(--danger)}
-.admin-btn.success{background:rgba(76,175,80,0.1);border:1px solid var(--success);color:var(--success)}
-.admin-btn:hover{transform:scale(1.02)}
-.admin-list{display:flex;flex-direction:column;gap:10px}
-.admin-list-item{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:16px;display:flex;justify-content:space-between;align-items:center;transition:all 0.3s;flex-wrap:wrap;gap:10px}
-.admin-list-item:hover{border-color:var(--accent)}
-.admin-list-item .info{flex:1;min-width:200px}
-.admin-list-item .info h4{font-weight:700;font-size:0.95rem;margin-bottom:4px}
-.admin-list-item .info p{font-size:0.8rem;color:var(--text-muted)}
-.admin-list-item .actions{display:flex;gap:6px;flex-shrink:0}
-.admin-list-item .actions button{width:36px;height:36px;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;font-size:1rem}
-.admin-list-item .actions .edit-btn{background:rgba(103,58,183,0.2);color:#a78bfa}
-.admin-list-item .actions .delete-btn{background:rgba(244,67,54,0.2);color:var(--danger)}
-.admin-list-item .actions button:hover{transform:scale(1.1)}
-.photo-upload-area{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
-.photo-slot{width:100px;height:100px;background:rgba(0,0,0,0.3);border:2px dashed var(--glass-border);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;position:relative;overflow:hidden;flex-shrink:0}
-.photo-slot:hover{border-color:var(--accent);background:rgba(233,30,99,0.05)}
-.photo-slot.has-photo{border:2px solid var(--glass-border)}
-.photo-slot.has-photo img{width:100%;height:100%;object-fit:cover}
-.photo-slot .remove-photo{position:absolute;top:4px;right:4px;width:22px;height:22px;background:rgba(244,67,54,0.9);color:#fff;border:none;border-radius:50%;cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center;opacity:0;transition:all 0.3s}
-.photo-slot.has-photo:hover .remove-photo{opacity:1}
-.photo-slot .placeholder{color:var(--text-muted);font-size:0.7rem;text-align:center}
-.services-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.service-item{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.service-item .form-input{flex:1;min-width:100px}
-.service-item .service-price{width:100px;flex:none}
-.service-item .remove-service{width:32px;height:32px;background:rgba(244,67,54,0.1);border:1px solid var(--danger);color:var(--danger);border-radius:8px;cursor:pointer;font-size:1rem;transition:all 0.3s;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.service-item .remove-service:hover{background:var(--danger);color:#fff}
-.chat-list{display:flex;flex-direction:column;gap:8px}
-.chat-item{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:14px 18px;transition:all 0.3s;position:relative}
-.chat-item:hover{border-color:var(--accent)}
-.chat-item.waiting{border-color:var(--warning);box-shadow:0 0 15px rgba(255,152,0,0.1)}
-.chat-item.new-message{border-color:var(--accent);background:rgba(233,30,99,0.1)}
-.chat-item-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
-.chat-item-header h4{font-weight:700;font-size:0.95rem;display:flex;align-items:center;gap:6px}
-.chat-item-header .status{font-size:0.7rem;padding:3px 10px;border-radius:6px;font-weight:600}
-.chat-item-header .status.waiting{background:rgba(255,152,0,0.2);color:var(--warning)}
-.chat-item-header .status.active{background:rgba(76,175,80,0.2);color:var(--success)}
-.chat-item-header .status.idle{background:var(--glass);color:var(--text-muted)}
-.chat-item-preview{font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat-item-actions{display:flex;gap:6px;flex-wrap:wrap}
-.chat-item-actions button{padding:6px 12px;border:none;border-radius:8px;font-family:inherit;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;gap:4px}
-.chat-item-actions .open-chat{background:rgba(103,58,183,0.2);color:#a78bfa}
-.chat-item-actions .open-chat:hover{background:rgba(103,58,183,0.4)}
-.chat-item-actions .toggle-bot{background:rgba(255,152,0,0.2);color:var(--warning)}
-.chat-item-actions .toggle-bot:hover{background:rgba(255,152,0,0.4)}
-.chat-item-actions .toggle-bot.bot-on{background:rgba(76,175,80,0.2);color:var(--success)}
-.chat-item-actions .clear-chat{background:rgba(244,67,54,0.2);color:var(--danger)}
-.chat-item-actions .clear-chat:hover{background:rgba(244,67,54,0.4)}
-.admin-chat-modal{max-width:700px;height:85vh;display:flex;flex-direction:column}
-.admin-chat-messages{flex:1;overflow-y:auto;padding:0 20px 16px;display:flex;flex-direction:column;gap:10px}
-.admin-chat-input-wrap{padding:0 20px 20px;display:flex;gap:10px}
+    /* Чат */
+    .chat-container { max-width: 800px; margin: 0 auto; background: rgba(0,0,0,0.5); border-radius: 15px; height: 70vh; display: flex; flex-direction: column; }
+    .chat-messages { flex: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+    .chat-msg { max-width: 80%; padding: 0.8rem 1.2rem; border-radius: 15px; line-height: 1.4; word-wrap: break-word; }
+    .chat-msg.user { align-self: flex-end; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-bottom-right-radius: 2px; }
+    .chat-msg.bot { align-self: flex-start; background: rgba(255,255,255,0.1); border-bottom-left-radius: 2px; }
+    .chat-msg.system { align-self: center; background: transparent; color: var(--text-muted); font-size: 0.8rem; text-align: center; }
+    .chat-input-area { padding: 1rem; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 0.5rem; }
+    .chat-input { flex: 1; padding: 0.8rem; border-radius: 20px; border: none; background: rgba(255,255,255,0.1); color: white; outline: none; }
+    
+    /* Админка */
+    .admin-panel { display: none; }
+    .admin-panel.active { display: block; }
+    .admin-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
+    .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 1rem; cursor: pointer; padding: 0.5rem 1rem; }
+    .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); }
+    .form-control { width: 100%; padding: 0.8rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; }
+    
+    .admin-list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.05); margin-bottom: 0.5rem; border-radius: 8px; }
+    .item-actions button { margin-left: 0.5rem; padding: 0.4rem 0.8rem; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-edit { background: #2196F3; color: white; }
+    .btn-delete { background: #F44336; color: white; }
 
-/* MOBILE FIX - ФОТО ОТОБРАЖАЮТСЯ */
-@media(max-width:768px){
-    .header{height:58px;padding:0 12px;gap:8px}
-    .header-logo .logo-heart{width:28px;height:28px}
-    .header-logo .logo-text{font-size:0.8rem}
-    .header-center{flex:1;justify-content:center;overflow:hidden}
-    .header-nav{gap:1px;justify-content:center}
-    .header-nav .nav-btn{font-size:0.7rem;padding:5px 7px}
-    .header-profile-btn{width:34px;height:34px;font-size:1rem}
-    .profile-dropdown{top:50px;right:12px}
-    .main{padding-top:68px}
-    .chat-container{height:calc(100vh - 68px)}
-    .girls-grid{grid-template-columns:1fr}
-    .girl-card-img,.girl-card-img-placeholder{height:280px !important; min-height:280px}
-    .profile-modal-img,.profile-modal-img-placeholder{height:300px !important; min-height:300px}
-    .chat-msg .msg-profile-img{height:180px !important; min-height:180px}
-    .profile-stats-grid{grid-template-columns:repeat(2,1fr)}
-    .chat-msg{max-width:90%}
-    .modal{border-radius:20px;margin:10px;max-height:92vh}
-    .modal-header{padding:18px 18px 0}
-    .modal-body{padding:18px}
-    .age-modal .age-buttons{flex-direction:column}
-    .admin-row{flex-direction:column}
-    .admin-row .form-group{min-width:100%}
-    .catalog-header h1{font-size:1.6rem}
-    .photo-slot{width:80px;height:80px}
-    .admin-tabs{gap:2px;padding:3px}
-    .admin-tab{padding:10px 12px;font-size:0.8rem;min-width:90px}
-}
-@media(max-width:400px){
-    .header-logo .logo-text{font-size:0.72rem}
-    .header-nav .nav-btn{font-size:0.65rem;padding:4px 5px}
-    .header-logo .logo-heart{width:24px;height:24px}
-    .header-profile-btn{width:32px;height:32px}
-    .header-center{margin:0 4px}
-    .photo-slot{width:70px;height:70px}
-    .girl-card-img,.girl-card-img-placeholder{height:250px !important}
-    .profile-modal-img,.profile-modal-img-placeholder{height:250px !important}
-}
+    /* Чат админа */
+    .chat-item { background: rgba(255,255,255,0.05); padding: 1rem; margin-bottom: 0.5rem; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+    .chat-item:hover { background: rgba(255,255,255,0.1); }
+    .chat-item.new-message { border-left: 3px solid var(--primary); }
+    .chat-item-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+    .status { font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 4px; }
+    .status.waiting { background: #FF9800; color: black; }
+    .status.active { background: #4CAF50; color: white; }
+    
+    /* Уведомления */
+    .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 1rem 2rem; border-radius: 8px; animation: fadeIn 0.3s; z-index: 2000; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Галерея фото в профиле */
-.profile-photo-gallery {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 10px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 10px;
-    margin-bottom: 15px;
-}
+    /* 18+ Modal */
+    #ageModal .modal-content { text-align: center; }
+    .age-btn { margin: 1rem; padding: 1rem 2rem; font-size: 1.2rem; }
+    .age-btn.yes { background: var(--primary); }
+    .age-btn.no { background: #555; }
 
-.gallery-photo {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.gallery-photo:hover {
-    transform: scale(1.05);
-}
-
-/* Полноразмерное фото (модалка) */
-.fullsize-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.95);
-    z-index: 3000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-
-.fullsize-modal.show {
-    display: flex;
-}
-
-.fullsize-modal img {
-    max-width: 90%;
-    max-height: 90%;
-    object-fit: contain;
-    border-radius: 4px;
-}
-
-.fullsize-close {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    font-size: 40px;
-    color: #fff;
-    cursor: pointer;
-    z-index: 3001;
-}
-
-.empty-state{text-align:center;padding:40px;color:var(--text-muted)}.empty-state .icon{font-size:3rem;margin-bottom:12px}
-</style>
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; } /* Упрощено для примера */
+    }
+  </style>
 </head>
 <body>
-<div class="video-bg" id="videoBg">
-<video autoplay muted loop playsinline webkit-playsinline preload="auto" id="bgVideo"><source src="video/bg.mp4" type="video/mp4"></video>
-<div class="orb"></div><div class="orb"></div><div class="orb"></div><div class="orb"></div><div class="orb"></div>
-</div>
-<div class="app">
-<div class="modal-overlay" id="ageModal"><div class="modal age-modal"><button class="modal-close" onclick="closeAgeModal()">✕</button><div class="modal-header"><div class="age-icon">🔞</div><h2>Подтверждение возраста</h2></div><div class="modal-body"><p>Данный сайт содержит материалы для лиц старше 18 лет. Продолжая, вы подтверждаете, что вам исполнилось 18 лет, и соглашаетесь с <span class="policy-link" onclick="openPrivacyPolicy()">политикой конфиденциальности</span>.</p><div class="age-buttons"><button class="age-btn yes" onclick="confirmAge()">Мне есть 18</button><button class="age-btn no" onclick="denyAge()">Мне нет 18</button></div></div></div></div>
-<div class="modal-overlay" id="authModal"><div class="modal auth-modal"><button class="modal-close" onclick="closeAuthModal()">✕</button><div class="modal-header"><h2>Вход / Регистрация</h2></div><div class="modal-body"><div class="auth-tabs"><button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button><button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button></div><div id="loginForm"><div class="form-group"><label>Никнейм</label><input type="text" class="form-input" id="loginNick" placeholder="Введите никнейм"></div><div class="form-group"><label>Пароль</label><input type="password" class="form-input" id="loginPass" placeholder="Введите пароль"></div><button class="form-btn" onclick="login()">Войти</button></div><div id="registerForm" style="display:none"><div class="form-group"><label>Никнейм</label><input type="text" class="form-input" id="regNick" placeholder="Придумайте никнейм"></div><div class="form-group"><label>Пароль</label><input type="password" class="form-input" id="regPass" placeholder="Придумайте пароль"></div><button class="form-btn" onclick="register()">Зарегистрироваться</button></div><span class="policy-link" onclick="openPrivacyPolicy()">Политика конфиденциальности</span></div></div></div>
-<div class="modal-overlay" id="profileModal"><div class="modal profile-modal"><button class="modal-close" onclick="closeProfileModal()">✕</button><div id="profileContent"></div></div></div>
-<div class="modal-overlay" id="citiesModal"><div class="modal cities-modal"><button class="modal-close" onclick="closeCitiesModal()">✕</button><div class="modal-header"><h2>Города</h2></div><div class="modal-body"><div class="cities-list" id="citiesList"></div></div></div></div>
-<div class="modal-overlay" id="privacyModal"><div class="modal policy-modal"><button class="modal-close" onclick="closePrivacyPolicy()">✕</button><div class="modal-header"><h2>Политика конфиденциальности</h2></div><div class="modal-body"><div class="policy-content"><h3>1. Общие положения</h3><p>Настоящая Политика конфиденциальности регулирует порядок обработки и использования персональных данных пользователей сайта BABYGIRL_LNR.</p><h3>2. Сбор информации</h3><p>Мы собираем минимально необходимую информацию: никнейм и пароль для создания учётной записи.</p><h3>3. Использование информации</h3><p>Данные используются исключительно для идентификации пользователя, работы чата с оператором и персонализации контента.</p><h3>4. Защита данных</h3><p>Мы применяем современные меры безопасности. Пароли хранятся в зашифрованном виде.</p><h3>5. Передача данных</h3><p>Мы не передаём данные третьим лицам, за исключением случаев, предусмотренных законодательством.</p><h3>6. Файлы cookie</h3><p>Сайт использует cookie для обеспечения корректной работы и сохранения сессии.</p><h3>7. Возрастные ограничения</h3><p>Сайт предназначен исключительно для лиц старше 18 лет.</p><h3>8. Изменение политики</h3><p>Мы оставляем за собой право вносить изменения. Продолжение использования означает согласие.</p><h3>9. Контакты</h3><p>По вопросам обращайтесь через раздел поддержки на сайте.</p></div></div></div></div>
-<div class="profile-dropdown" id="profileDropdown"><div class="pd-name" id="pdName">Профиль</div><button class="pd-btn" onclick="openSupport()">💬 Поддержка</button><button class="pd-btn" onclick="openAdmin()" id="adminBtn" style="display:none">⚙️ Панель управления</button><button class="pd-btn danger" onclick="logout()">🚪 Выйти</button></div>
-<header class="header" id="header"><div class="header-logo" onclick="navigateTo('girls')"><div class="logo-heart"><svg viewBox="0 0 40 40" fill="none"><path d="M20 35C10 28 2 22 2 14C2 8 7 3 13 3C16 3 18.5 4.5 20 7C21.5 4.5 24 3 27 3C33 3 38 8 38 14C38 22 30 28 20 35Z" stroke="url(#hg)" stroke-width="2" fill="none"><animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" fill="freeze"/><animate attributeName="stroke-dasharray" from="0 100" to="100 0" dur="2s" fill="freeze"/></path><defs><linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e91e63"/><stop offset="100%" stop-color="#9c27b0"/></linearGradient></defs></svg></div><span class="logo-text">BABYGIRL_LNR</span></div><div class="header-center"><nav class="header-nav"><button class="nav-btn active" data-section="girls" onclick="navigateTo('girls')">👩 Девушки</button><button class="nav-btn" data-section="chat" onclick="navigateTo('chat')">💬 Чат</button><button class="nav-btn" data-section="cities" onclick="openCitiesModal()">🏙️ Города</button></nav></div><div class="header-right"><button class="header-profile-btn" onclick="toggleProfileDropdown()">👤<span id="notificationBadge" style="display:none" class="notification-badge">0</span></button></div></header>
-<main class="main">
-<section class="section active" id="sec-girls">
-  <div class="catalog-header"><h1 id="mainHeaderTitle">Анкеты девушек</h1><p id="mainHeaderSubtitle">Выберите идеальную компанию для незабываемого вечера</p></div>
-  <div id="catalogPhone" style="margin-bottom: 20px; text-align: center; display: none;">
-    <a href="#" id="catalogPhoneLink" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 20px; color: #ff6090; text-decoration: none; font-weight: 700; font-size: 1.1rem; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;">📞 +7 XXX XXX-XX-XX</a>
+
+  <video id="video-bg" autoplay muted loop>
+    <source src="video/bg.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+
+  <!-- Навигация -->
+  <nav>
+    <div class="logo">BABYGIRL_LNR</div>
+    <div class="nav-links">
+      <button onclick="navigateTo('home')">Главная</button>
+      <button onclick="navigateTo('chat')">Чат</button>
+      <button id="authBtn" onclick="toggleAuth()">Войти</button>
+      <button id="adminBtn" style="display:none;" onclick="navigateTo('admin')">Админка</button>
+      <button id="logoutBtn" style="display:none;" onclick="logout()">Выход</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Главная -->
+    <div id="homeSection">
+      <div class="filters">
+        <button class="filter-btn active" onclick="filterGirls('all')">Все</button>
+        <button class="filter-btn" onclick="filterGirls('Луганск')">Луганск</button>
+        <button class="filter-btn" onclick="filterGirls('Стаханов')">Стаханов</button>
+        <button class="filter-btn" onclick="filterGirls('Первомайск')">Первомайск</button>
+      </div>
+      <div class="grid" id="girlsGrid"></div>
+    </div>
+
+    <!-- Чат -->
+    <div id="chatSection" style="display:none;">
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <input type="text" class="chat-input" id="chatInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter')sendMessage()">
+          <button class="btn" style="width:auto;" onclick="sendMessage()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Админка -->
+    <div id="adminSection" class="admin-panel">
+      <div class="admin-tabs">
+        <button class="tab-btn active" onclick="switchAdminTab('girls-tab')">Анкеты</button>
+        <button class="tab-btn" onclick="switchAdminTab('chats-tab')">Чаты</button>
+        <button class="tab-btn" onclick="switchAdminTab('settings-tab')">Настройки</button>
+      </div>
+
+      <!-- Вкладка Анкеты -->
+      <div id="girls-tab" class="admin-tab-content">
+        <div class="modal-content" style="margin:0 auto; max-width:600px;">
+          <h3>Добавить/Редактировать</h3>
+          <input type="hidden" id="editGirlId">
+          <div class="form-group"><label>Имя</label><input class="form-control" id="admName"></div>
+          <div class="form-group"><label>Город</label><select class="form-control" id="admCity"><option>Луганск</option><option>Стаханов</option><option>Первомайск</option></select></div>
+          <div class="form-group"><label>Возраст</label><input type="number" class="form-control" id="admAge"></div>
+          <div class="form-group"><label>Рост</label><input type="number" class="form-control" id="admHeight"></div>
+          <div class="form-group"><label>Вес</label><input type="number" class="form-control" id="admWeight"></div>
+          <div class="form-group"><label>Грудь</label><input class="form-control" id="admBreast"></div>
+          <div class="form-group"><label>Описание</label><textarea class="form-control" id="admDesc"></textarea></div>
+          <div class="form-group"><label>Фото</label><input type="file" class="form-control" id="admPhotos" multiple accept="image/*"></div>
+          <button class="btn" onclick="saveGirl()">Сохранить</button>
+        </div>
+        <h3 style="margin-top:2rem;">Список анкет</h3>
+        <div id="adminGirlsList"></div>
+      </div>
+
+      <!-- Вкладка Чаты -->
+      <div id="chats-tab" class="admin-tab-content" style="display:none;">
+        <h3>Активные чаты</h3>
+        <div id="adminChatList"></div>
+      </div>
+
+      <!-- Вкладка Настройки -->
+      <div id="settings-tab" class="admin-tab-content" style="display:none;">
+        <h3>Настройки сайта</h3>
+        <div class="form-group"><label>Заголовок</label><input class="form-control" id="setHeader"></div>
+        <button class="btn" onclick="saveSettings()">Сохранить</button>
+      </div>
+    </div>
   </div>
-  <div class="catalog-filters" id="catalogFilters"></div>
-  <div class="girls-grid" id="girlsGrid"></div>
-</section>
-<section class="section" id="sec-chat"><div class="chat-container"><div class="chat-header"><h3>💬 Чат с оператором</h3><div class="chat-indicator" id="chatIndicator"><span class="dot"></span><span>Ожидание оператора...</span></div></div><div class="chat-messages" id="chatMessages"></div><div class="chat-input-wrap"><input type="text" class="chat-input" id="chatInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter')sendMessage()"><button class="chat-send" onclick="sendMessage()">➤</button></div></div></section>
-<section class="section" id="sec-admin"><div class="catalog-header"><h1>Панель управления</h1><p>Управление контентом и чатами</p></div><div class="admin-tabs"><button class="admin-tab active" onclick="switchAdminTab('girls-tab')">👩 Анкеты</button><button class="admin-tab" onclick="switchAdminTab('chats-tab')">💬 Чаты<span id="chatsBadge" class="badge" style="display:none">0</span></button><button class="admin-tab" onclick="switchAdminTab('settings-tab')">⚙️ Настройки</button></div><div class="admin-panel active" id="girls-tab"><div class="admin-section"><h3>➕ Добавить / Редактировать анкету</h3><div class="admin-card"><input type="hidden" id="editGirlId" value=""><div class="admin-row"><div class="form-group"><label>Имя *</label><input type="text" class="form-input" id="admGirlName" placeholder="Имя девушки"></div><div class="form-group"><label>Город</label><select class="form-input" id="admGirlCity"><option value="Луганск">Луганск</option><option value="Стаханов">Стаханов</option><option value="Первомайск">Первомайск</option></select></div></div><div class="admin-row"><div class="form-group"><label>Рост (см)</label><input type="number" class="form-input" id="admGirlHeight" placeholder="170"></div><div class="form-group"><label>Вес (кг)</label><input type="number" class="form-input" id="admGirlWeight" placeholder="55"></div><div class="form-group"><label>Размер груди</label><input type="text" class="form-input" id="admGirlBreast" placeholder="3"></div><div class="form-group"><label>Возраст</label><input type="number" class="form-input" id="admGirlAge" placeholder="22"></div></div><div class="form-group"><label>Описание</label><textarea class="form-input" id="admGirlDesc" rows="3" placeholder="Описание девушки..."></textarea></div><div class="form-group"><label>Предпочтения</label><input type="text" class="form-input" id="admGirlPrefs" placeholder="Предпочтения..."></div><div class="form-group"><label>Фото (до 4 шт)</label><div class="photo-upload-area" id="photoUploadArea"><div class="photo-slot" onclick="uploadPhoto(0)"><span class="placeholder">📷<br>1</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(0,this)"></div><div class="photo-slot" onclick="uploadPhoto(1)"><span class="placeholder">📷<br>2</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(1,this)"></div><div class="photo-slot" onclick="uploadPhoto(2)"><span class="placeholder">📷<br>3</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(2,this)"></div><div class="photo-slot" onclick="uploadPhoto(3)"><span class="placeholder">📷<br>4</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(3,this)"></div></div></div><div class="form-group"><label>Услуги</label><div class="services-list" id="servicesList"></div><button class="admin-btn secondary" onclick="addServiceRow()" style="margin-top:8px">➕ Добавить услугу</button></div><div class="admin-row" style="margin-top:16px"><button class="admin-btn primary" onclick="saveGirl()">💾 Сохранить анкету</button><button class="admin-btn secondary" onclick="clearGirlForm()">🗑️ Очистить</button></div></div><h3 style="margin-top:20px">📋 Список анкет</h3><div class="admin-list" id="adminGirlsList"></div></div></div><div class="admin-panel" id="chats-tab"><div class="admin-section"><h3>💬 Активные чаты с клиентами</h3><div class="chat-list" id="adminChatList"></div></div></div><div class="admin-panel" id="settings-tab"><div class="admin-section"><h3>⚙️ Настройки сайта</h3><div class="admin-card"><div class="form-group"><label>Заголовок главной страницы</label><input type="text" class="form-input" id="admMainTitle" value="Анкеты девушек"></div><div class="form-group"><label>Описание главной страницы</label><input type="text" class="form-input" id="admMainSubtitle" value="Выберите идеальную компанию для незабываемого вечера"></div><div class="form-group"><label>Название вкладки браузера</label><input type="text" class="form-input" id="admSiteTitle" value="BABYGIRL_LNR"></div><div class="form-group"><label>Описание сайта (SEO)</label><textarea class="form-input" id="admSiteDesc" rows="2" placeholder="Краткое описание..."></textarea></div><div class="form-group"><label>Номер телефона (шапка)</label><input type="text" class="form-input" id="admSitePhone" placeholder="+7 XXX XXX-XX-XX"></div><div class="admin-row" style="margin-top:12px"><button class="admin-btn primary" onclick="saveSiteSettings()">💾 Сохранить настройки</button></div></div></div></div></section>
-</main>
-<footer class="footer"><div class="warning">⚠️ Данный сайт содержит материалы 18+. Доступ разрешён только лицам старше 18 лет.</div><div class="info">BABYGIRL_LNR — сервис знакомств. Все услуги предоставляются по взаимному согласию. Оплата производится напрямую девушке при встрече. Администрация не несёт ответственности за действия пользователей.</div></footer>
-</div>
-<div class="modal-overlay" id="adminChatModal"><div class="modal admin-chat-modal"><button class="modal-close" onclick="closeAdminChat()">✕</button><div class="modal-header"><h2 id="adminChatTitle">Чат</h2></div><div class="admin-chat-messages" id="adminChatMessages"></div><div class="admin-chat-input-wrap"><input type="text" class="chat-input" id="adminChatInput" placeholder="Ответить..." onkeypress="if(event.key==='Enter')window.sendAdminReply()"><button class="chat-send" onclick="window.sendAdminReply()">➤</button></div><div style="padding:0 20px 15px;display:flex;gap:8px"><button class="admin-btn danger" onclick="window.clearChatHistory()" style="flex:1">🗑️ Очистить</button><button class="admin-btn success" onclick="window.resetClientBot()" style="flex:1">✅ Завершить</button><button class="admin-btn secondary" onclick="closeAdminChat()" style="flex:1">Закрыть</button></div></div></div>
 
-<script>
-// === CONFIG ===
-const API_URL = window.location.origin; // Один домен для frontend+backend
+  <!-- Модалка профиля -->
+  <div id="profileModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeProfile()">&times;</span>
+      <div id="profileContent"></div>
+    </div>
+  </div>
 
-// === STATE ===
-let state = {
-    token: localStorage.getItem('token') || null,
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    currentSection: 'girls',
-    currentCityFilter: 'all',
-    girls: [],
-    adminChatWith: null
-};
-let tempPhotos = [null, null, null, null];
-let chatRefreshInterval = null;
+  <!-- Модалка чата админа -->
+  <div id="adminChatModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <span class="close-modal" onclick="closeAdminChat()">&times;</span>
+      <h3 id="adminChatTitle">Чат</h3>
+      <div class="chat-container" style="height: 400px; margin-top:1rem;">
+        <div class="chat-messages" id="adminChatMessages"></div>
+        <div class="chat-input-area">
+          <input type="text" class="chat-input" id="adminChatInput" placeholder="Ответ оператора..." onkeypress="if(event.key==='Enter')sendAdminReply()">
+          <button class="btn" style="width:auto;" onclick="sendAdminReply()">➤</button>
+        </div>
+      </div>
+      <div style="margin-top:1rem; display:flex; gap:10px;">
+        <button class="btn" style="background:#4CAF50;" onclick="completeAdminChat()">✅ Завершить</button>
+        <button class="btn" style="background:#F44336;" onclick="clearAdminChat()">🗑️ Очистить</button>
+      </div>
+    </div>
+  </div>
 
-// === API HELPER ===
-async function apiCall(endpoint, options = {}) {
-    const headers = { 'Content-Type': 'application/json', ...options.headers };
-    if (state.token) headers['Authorization'] = `Bearer ${state.token}`;
-    const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-    if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
-    return res.json();
-}
+  <!-- Модалка 18+ -->
+  <div id="ageModal" class="modal">
+    <div class="modal-content">
+      <h2>Вам есть 18 лет?</h2>
+      <p style="margin:1rem 0; color:#aaa;">Сайт содержит материалы для взрослых.</p>
+      <button class="btn age-btn yes" onclick="confirmAge()">Да, мне есть 18</button>
+      <button class="btn age-btn no" onclick="rejectAge()">Нет</button>
+    </div>
+  </div>
 
-// === INIT ===
-async function init() {
-    document.getElementById('ageModal').classList.add('show');
-    if (state.user) updateUIForLoggedUser();
-    loadGirls();
-    loadSettings();
-    window.addEventListener('scroll', () => document.getElementById('header').classList.toggle('scrolled', window.scrollY > 20));
-}
+  <script>
+    const API_URL = window.location.origin;
+    let state = {
+      user: null,
+      token: localStorage.getItem('token'),
+      girls: [],
+      currentFilter: 'all',
+      adminChatWith: null,
+      adminChatsInterval: null,
+      chatPollingInterval: null
+    };
 
-function loadSettings() {
-    fetch(`${API_URL}/api/settings`).then(r => r.json()).then(s => {
-        state.settings = s;
-        document.getElementById('mainHeaderTitle').textContent = s.mainTitle;
-        document.getElementById('mainHeaderSubtitle').textContent = s.mainSubtitle;
-        document.title = s.title;
-        if (s.phone) {
-            document.getElementById('catalogPhone').style.display = 'block';
-            document.getElementById('catalogPhoneLink').textContent = '📞 ' + s.phone;
-            document.getElementById('catalogPhoneLink').href = 'tel:' + s.phone.replace(/\s/g, '');
-        }
-        if(s.mainTitle) document.getElementById('admMainTitle').value = s.mainTitle;
-        if(s.mainSubtitle) document.getElementById('admMainSubtitle').value = s.mainSubtitle;
-        if(s.title) document.getElementById('admSiteTitle').value = s.title;
-        if(s.phone) document.getElementById('admSitePhone').value = s.phone;
-    });
-}
-
-function loadGirls() {
-    fetch(`${API_URL}/api/girls`).then(r => r.json()).then(data => {
-        state.girls = data;
-        renderGirls();
-        renderCatalogFilters();
-    });
-}
-
-// === AUTH ===
-async function login() {
-    const nick = document.getElementById('loginNick').value.trim();
-    const pass = document.getElementById('loginPass').value.trim();
-    if (!nick || !pass) return showToast('Заполните все поля', 'error');
-    try {
-        const data = await apiCall('/api/auth/login', { method: 'POST', body: JSON.stringify({ username: nick, password: pass }) });
-        if (data.token) {
-            state.token = data.token; state.user = data.user;
-            localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user));
-            closeAuthModal(); updateUIForLoggedUser(); showToast('Добро пожаловать!', 'success');
-        } else showToast(data.message || 'Ошибка входа', 'error');
-    } catch (e) { showToast('Ошибка соединения', 'error'); }
-}
-
-async function register() {
-    const nick = document.getElementById('regNick').value.trim();
-    const pass = document.getElementById('regPass').value.trim();
-    if (!nick || !pass) return showToast('Заполните все поля', 'error');
-    try {
-        const data = await apiCall('/api/auth/register', { method: 'POST', body: JSON.stringify({ username: nick, password: pass }) });
-        if (data.token) {
-            state.token = data.token; state.user = data.user;
-            localStorage.setItem('token', data.token); localStorage.setItem('user', JSON.stringify(data.user));
-            closeAuthModal(); updateUIForLoggedUser(); showToast('Регистрация успешна!', 'success');
-        } else showToast(data.message || 'Ошибка', 'error');
-    } catch (e) { showToast('Ошибка', 'error'); }
-}
-
-function logout() {
-    state.token = null; state.user = null;
-    localStorage.removeItem('token'); localStorage.removeItem('user');
-    document.getElementById('pdName').textContent = 'Профиль';
-    document.getElementById('adminBtn').style.display = 'none';
-    showToast('Вы вышли', 'success');
-}
-
-function updateUIForLoggedUser() {
-    if (!state.user) return;
-    document.getElementById('pdName').textContent = '👤 ' + state.user.username;
-    document.getElementById('adminBtn').style.display = state.user.role === 'admin' ? 'flex' : 'none';
-}
-
-// === NAVIGATION & CHAT POLLING ===
-function navigateTo(section) {
-    if ((section === 'chat' || section === 'admin') && !state.user) { openAuthModal(); return; }
-    if (chatRefreshInterval) { clearInterval(chatRefreshInterval); chatRefreshInterval = null; }
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById('sec-' + section).classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const navBtn = document.querySelector(`[data-section="${section}"]`);
-    if (navBtn) navBtn.classList.add('active');
-    state.currentSection = section;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (section === 'chat' && state.user) {
-        loadChatHistory();
-        chatRefreshInterval = setInterval(loadChatHistory, 3000);
+    // --- AUTH ---
+    async function initAuth() {
+      if (state.token) {
+        try {
+          const res = await fetch(API_URL + '/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'temp', password: 'temp' }) // Hack to decode token locally or just trust storage
+          });
+          // Простая проверка: если токен есть, считаем юзера авторизованным (в реальном проекте нужен endpoint me)
+          // Для упрощения декодируем JWT вручную или храним данные в LS
+          const userData = JSON.parse(localStorage.getItem('user'));
+          if (userData) {
+            state.user = userData;
+            updateNav();
+          }
+        } catch(e) { logout(); }
+      }
+      
+      // Проверка возраста
+      if (!localStorage.getItem('ageConfirmed')) {
+        document.getElementById('ageModal').classList.add('show');
+      }
     }
-    if (section === 'admin' && state.user) {
-        loadAdminChats(); loadGirls();
-    }
-}
 
-// === CHAT ===
-function loadChatHistory() {
-    if (!state.user) return;
-    console.log('📡 Loading chat history for:', state.user.username);
-    apiCall('/api/chat').then(data => {
-        console.log('✅ Chat loaded, messages:', data.messages?.length || 0);
-        if (data.messages && data.messages.length > 0) {
-            renderMessages(data.messages);
+    function confirmAge() {
+      localStorage.setItem('ageConfirmed', 'true');
+      document.getElementById('ageModal').classList.remove('show');
+    }
+    function rejectAge() { window.location.href = 'https://google.com'; }
+
+    async function login() {
+      const username = prompt('Логин:');
+      const password = prompt('Пароль:');
+      if (!username || !password) return;
+      
+      try {
+        const res = await fetch(API_URL + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          state.token = data.token;
+          state.user = data.user;
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          updateNav();
+          showToast('Вход выполнен');
+          if (data.user.role === 'admin') navigateTo('admin');
         } else {
-            // Чат пустой - рендерим пустой список
-            // Бэкенд уже добавил приветственное сообщение, поэтому просто ждём следующего polling
-            renderMessages([]);
+          showToast(data.message, 'error');
         }
-    }).catch(err => {
-        console.error('❌ Load chat error:', err);
-    });
-}
-
-async function sendMessageToBot(text) {
-    if (!state.user) return;
-    try {
-        const data = await apiCall('/api/chat/send', { method: 'POST', body: JSON.stringify({ text: text || 'Привет' }) });
-        renderMessages(data.messages);
-    } catch (e) {}
-}
-
-async function sendMessage() {
-    const inp = document.getElementById('chatInput');
-    const text = inp.value.trim();
-    if (!text || !state.user) return;
-    inp.value = '';
-    try {
-        const data = await apiCall('/api/chat/send', { method: 'POST', body: JSON.stringify({ text }) });
-        renderMessages(data.messages);
-    } catch (e) { showToast('Ошибка отправки', 'error'); }
-}
-
-function renderMessages(messages) {
-    const container = document.getElementById('chatMessages');
-    if(!container) return;
-    container.innerHTML = '';
-    const indicator = document.getElementById('chatIndicator');
-    const isWaiting = messages.some(m => m.extra && m.extra.type === 'processing');
-    indicator.classList.toggle('show', isWaiting);
-    messages.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = `chat-msg ${msg.type}`;
-        if (msg.type === 'user') div.textContent = msg.text;
-        else if (msg.type === 'bot') div.innerHTML = formatBotMessage(msg);
-        else div.textContent = msg.text;
-        container.appendChild(div);
-    });
-    container.scrollTop = container.scrollHeight;
-}
-
-function formatBotMessage(msg) {
-    let html = (msg.text || '').replace(/\n/g, '<br>');
-    if (!msg.extra) return html;
-    if (msg.extra.type === 'profile') {
-        const g = msg.extra.girl;
-        const mp = (g.photos && g.photos[0]) || '';
-        const imgHtml = mp ? `<img class="msg-profile-img" src="${mp}">` : '<div class="msg-profile-img-placeholder">👩</div>';
-        html += `<div class="msg-profile">${imgHtml}<div class="msg-profile-info"><h4>${g.name} • ${g.city}</h4><div class="price">${g.services.map(s => s.name + ': ' + s.price + '₽').join(', ')}</div><div class="pay-note">💰 Оплата девушке в руки</div></div></div>`;
+      } catch(e) { showToast('Ошибка сети', 'error'); }
     }
-    if (msg.extra.type === 'services') {
-        const g = msg.extra.girl;
-        html += '<div class="msg-services">' + g.services.map(s => 
-            `<button class="msg-service-btn" onclick="selectService('${g.name.replace(/'/g, "\\'")}', '${s.name.replace(/'/g, "\\'")}', '${s.price}')">${s.name} — ${s.price}₽</button>`
-        ).join('') + '</div>';
+
+    function logout() {
+      state.token = null;
+      state.user = null;
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      updateNav();
+      navigateTo('home');
     }
-    if (msg.extra.type === 'girls_list') {
-        html += '<div class="msg-services">' + msg.extra.girls.map(g => 
-            `<button class="msg-service-btn" onclick="selectGirlByName('${g.name.replace(/'/g, "\\'")}')">${g.name} — ${g.city}</button>`
-        ).join('') + '</div>';
+
+    function toggleAuth() {
+      if (state.user) logout();
+      else login();
     }
-    return html;
-}
 
-function selectService(girlName, serviceName, price) {
-    document.getElementById('chatInput').value = `${girlName} — ${serviceName}: ${price}₽`;
-    sendMessage();
-}
-function selectGirlByName(name) {
-    document.getElementById('chatInput').value = name;
-    sendMessage();
-}
+    function updateNav() {
+      const authBtn = document.getElementById('authBtn');
+      const adminBtn = document.getElementById('adminBtn');
+      const logoutBtn = document.getElementById('logoutBtn');
+      
+      if (state.user) {
+        authBtn.style.display = 'none';
+        logoutBtn.style.display = 'inline-block';
+        if (state.user.role === 'admin') adminBtn.style.display = 'inline-block';
+        else adminBtn.style.display = 'none';
+      } else {
+        authBtn.style.display = 'inline-block';
+        authBtn.textContent = 'Войти';
+        logoutBtn.style.display = 'none';
+        adminBtn.style.display = 'none';
+      }
+    }
 
-async function orderGirl(id) {
-    if (!state.user) { openAuthModal(); return; }
-    navigateTo('chat');
-    try {
-        const data = await apiCall('/api/chat/init', { method: 'POST', body: JSON.stringify({ girlId: id }) });
-        renderMessages(data.messages);
-    } catch (e) { showToast('Ошибка заказа', 'error'); }
-}
-
-// === ADMIN (Global Functions) ===
-window.openSupport = () => { closeProfileDropdown(); navigateTo('chat'); };
-window.openAdmin = () => { 
-    if (state.user.role !== 'admin') return; 
-    closeProfileDropdown(); 
-    navigateTo('admin'); 
-    loadGirls();
-    loadAdminChats(); 
-};
-
-window.switchAdminTab = (tabId) => {
-    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
-    document.querySelector(`.admin-tab[onclick*="${tabId}"]`).classList.add('active');
-    document.getElementById(tabId).classList.add('active');
-    
-    // Load data when switching tabs
-    if (tabId === 'girls-tab') {
+    // --- NAVIGATION ---
+    function navigateTo(section) {
+      document.getElementById('homeSection').style.display = 'none';
+      document.getElementById('chatSection').style.display = 'none';
+      document.getElementById('adminSection').classList.remove('active');
+      
+      if (section === 'home') {
+        document.getElementById('homeSection').style.display = 'block';
         loadGirls();
-    } else if (tabId === 'chats-tab') {
-        loadAdminChats();
+      } else if (section === 'chat') {
+        if (!state.user) { login(); return; }
+        document.getElementById('chatSection').style.display = 'block';
+        loadChatMessages();
+        startChatPolling();
+      } else if (section === 'admin') {
+        if (!state.user || state.user.role !== 'admin') { showToast('Доступ запрещен', 'error'); return; }
+        document.getElementById('adminSection').classList.add('active');
+        loadGirls(); // Загрузка анкет при входе
+        loadAdminChats(); // Загрузка чатов при входе
+      }
     }
-};
 
-window.saveGirl = async () => {
-    const editId = document.getElementById('editGirlId').value;
-    const name = document.getElementById('admGirlName').value.trim();
-    if (!name) return showToast('Введите имя', 'error');
-    const girl = { name, city: document.getElementById('admGirlCity').value, height: document.getElementById('admGirlHeight').value, weight: document.getElementById('admGirlWeight').value, breast: document.getElementById('admGirlBreast').value, age: document.getElementById('admGirlAge').value, desc: document.getElementById('admGirlDesc').value, prefs: document.getElementById('admGirlPrefs').value, services: getServicesFromList(), photos: tempPhotos.filter(p => p !== null) };
-    if (editId) girl._id = editId;
-    try {
-        await apiCall('/api/girls', { method: 'POST', body: JSON.stringify({ action: editId ? 'update' : 'add', girl }) });
-        showToast('Сохранено!', 'success'); clearGirlForm(); loadGirls(); renderAdminGirls();
-    } catch (e) { showToast('Ошибка', 'error'); }
-};
-
-window.editGirl = (id) => {
-    const g = state.girls.find(x => x._id == id); if (!g) return;
-    document.getElementById('editGirlId').value = g._id;
-    document.getElementById('admGirlName').value = g.name; document.getElementById('admGirlCity').value = g.city;
-    document.getElementById('admGirlHeight').value = g.height || ''; document.getElementById('admGirlWeight').value = g.weight || '';
-    document.getElementById('admGirlBreast').value = g.breast || ''; document.getElementById('admGirlAge').value = g.age || '';
-    document.getElementById('admGirlDesc').value = g.desc || ''; document.getElementById('admGirlPrefs').value = g.prefs || '';
-    document.getElementById('servicesList').innerHTML = ''; tempPhotos = [null, null, null, null];
-    if (g.photos) for(let i=0; i<4 && i<g.photos.length; i++) tempPhotos[i] = g.photos[i];
-    renderPhotoSlots(); if (g.services) g.services.forEach(s => addServiceRow(s.name, s.price));
-};
-
-window.deleteGirl = async (id) => {
-    if (!confirm('Удалить?')) return;
-    try { await apiCall('/api/girls', { method: 'POST', body: JSON.stringify({ action: 'delete', girl: { _id: id } }) }); loadGirls(); renderAdminGirls(); showToast('Удалено', 'success'); } 
-    catch (e) { showToast('Ошибка', 'error'); }
-};
-
-window.clearGirlForm = () => {
-    document.getElementById('editGirlId').value=''; document.getElementById('admGirlName').value=''; document.getElementById('admGirlCity').value='Луганск';
-    document.getElementById('admGirlHeight').value=''; document.getElementById('admGirlWeight').value=''; document.getElementById('admGirlBreast').value='';
-    document.getElementById('admGirlAge').value=''; document.getElementById('admGirlDesc').value=''; document.getElementById('admGirlPrefs').value='';
-    document.getElementById('servicesList').innerHTML=''; tempPhotos = [null,null,null,null]; renderPhotoSlots();
-};
-
-window.uploadPhoto = (idx) => document.querySelectorAll('#photoUploadArea .photo-slot input')[idx].click();
-window.handlePhoto = (idx, input) => {
-    const file = input.files[0]; if (!file) return;
-    const formData = new FormData(); formData.append('photos', file);
-    fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${state.token}` }, body: formData })
-    .then(r => r.json()).then(data => { if(data.urls && data.urls[0]) { tempPhotos[idx] = data.urls[0]; renderPhotoSlots(); } });
-};
-window.removePhoto = (idx, e) => { e.stopPropagation(); tempPhotos[idx] = null; renderPhotoSlots(); };
-window.renderPhotoSlots = () => {
-    const area = document.getElementById('photoUploadArea'); let html = '';
-    for(let i=0; i<4; i++) {
-        if (tempPhotos[i]) html += `<div class="photo-slot has-photo"><img src="${tempPhotos[i]}"><button class="remove-photo" onclick="removePhoto(${i},event)">✕</button><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(${i},this)"></div>`;
-        else html += `<div class="photo-slot" onclick="uploadPhoto(${i})"><span class="placeholder">📷<br>${i+1}</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(${i},this)"></div>`;
+    // --- GIRLS ---
+    async function loadGirls() {
+      try {
+        const res = await fetch(API_URL + '/api/girls');
+        state.girls = await res.json();
+        renderGirls();
+        if (state.user && state.user.role === 'admin') renderAdminGirls();
+      } catch(e) { console.error(e); }
     }
-    area.innerHTML = html;
-};
-window.addServiceRow = (name='', price='') => {
-    const list = document.getElementById('servicesList'); const div = document.createElement('div'); div.className = 'service-item';
-    div.innerHTML = `<input type="text" class="form-input" placeholder="Название" value="${esc(name)}"><input type="text" class="form-input service-price" placeholder="Цена (₽)" value="${esc(price)}"><button class="remove-service" onclick="this.parentElement.remove()">✕</button>`;
-    list.appendChild(div);
-};
-window.getServicesFromList = () => {
-    const items = document.querySelectorAll('#servicesList .service-item'); const services = [];
-    items.forEach(item => { const inputs = item.querySelectorAll('.form-input'); const name = inputs[0].value.trim(); const price = inputs[1].value.trim(); if(name) services.push({name, price: price || '0'}); });
-    return services;
-};
 
-window.loadAdminChats = async () => {
-    try {
-        console.log('📡 Fetching admin chats...');
-        const response = await apiCall('/api/admin/chats');
-        console.log('✅ Raw response:', response);
+    function renderGirls() {
+      const grid = document.getElementById('girlsGrid');
+      const filtered = state.currentFilter === 'all' 
+        ? state.girls 
+        : state.girls.filter(g => g.city === state.currentFilter);
+      
+      grid.innerHTML = filtered.map(g => `
+        <div class="card" onclick="openProfile('${g._id}')">
+          <img src="${g.photos && g.photos[0] ? g.photos[0] : ''}" alt="${g.name}">
+          <div class="card-body">
+            <h3 class="card-title">${g.name}, ${g.age}</h3>
+            <p class="card-text">${g.desc}</p>
+            <div class="tags">
+              <span class="tag">${g.height} см</span>
+              <span class="tag">${g.weight} кг</span>
+              <span class="tag">${g.breast}</span>
+            </div>
+            <button class="btn">Открыть анкету</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function filterGirls(city) {
+      state.currentFilter = city;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      renderGirls();
+    }
+
+    function openProfile(id) {
+      const g = state.girls.find(x => x._id == id);
+      if (!g) return;
+      
+      let galleryHtml = '';
+      if (g.photos && g.photos.length > 1) {
+        galleryHtml = '<div class="profile-photo-gallery">' + 
+          g.photos.slice(1).map(p => `<img src="${p}" class="gallery-photo" onclick="showFullSize(this)">`).join('') + 
+        '</div>';
+      }
+
+      const content = document.getElementById('profileContent');
+      content.innerHTML = `
+        <img src="${g.photos && g.photos[0] ? g.photos[0] : ''}" class="profile-modal-img">
+        ${galleryHtml}
+        <h2>${g.name}, ${g.age}</h2>
+        <p style="color:var(--primary); margin-bottom:1rem;">📍 ${g.city}</p>
+        <p>${g.desc}</p>
         
-        // Обработка ответа - может быть массивом или объектом с data
-        const chats = Array.isArray(response) ? response : (response.data || []);
-        console.log('✅ Processed chats array:', chats.length);
+        <div class="profile-stat-grid">
+          <div class="stat-item"><div class="stat-label">Рост</div><div class="stat-value">${g.height} см</div></div>
+          <div class="stat-item"><div class="stat-label">Вес</div><div class="stat-value">${g.weight} кг</div></div>
+          <div class="stat-item"><div class="stat-label">Грудь</div><div class="stat-value">${g.breast}</div></div>
+          <div class="stat-item"><div class="stat-label">Возраст</div><div class="stat-value">${g.age} лет</div></div>
+        </div>
+        
+        <h4>Предпочтения:</h4>
+        <p style="margin-bottom:1rem; color:#ccc;">${g.prefs || 'Не указаны'}</p>
+        
+        <h4>Услуги:</h4>
+        <ul style="margin:1rem 0; padding-left:1.5rem; color:#ccc;">
+          ${(g.services || []).map(s => `<li>${s.name} — ${s.price}₽</li>`).join('')}
+        </ul>
+        
+        <button class="btn" onclick="orderGirl('${g._id}')">Заказать</button>
+      `;
+      document.getElementById('profileModal').classList.add('show');
+    }
+
+    function closeProfile() { document.getElementById('profileModal').classList.remove('show'); }
+    function showFullSize(img) {
+      const modal = document.createElement('div');
+      modal.className = 'modal show';
+      modal.style.background = 'rgba(0,0,0,0.95)';
+      modal.onclick = () => modal.remove();
+      modal.innerHTML = `<img src="${img.src}" style="max-width:90%; max-height:90%;">`;
+      document.body.appendChild(modal);
+    }
+
+    function orderGirl(id) {
+      closeProfile();
+      navigateTo('chat');
+      // Можно автоматически отправить сообщение боту про эту девушку
+    }
+
+    // --- ADMIN GIRLS ---
+    function renderAdminGirls() {
+      const list = document.getElementById('adminGirlsList');
+      if (!list) return;
+      
+      console.log('renderAdminGirls called, count:', state.girls.length);
+      
+      if (state.girls.length === 0) {
+        list.innerHTML = '<div class="empty-state">Анкет нет</div>';
+        return;
+      }
+
+      list.innerHTML = state.girls.map(g => `
+        <div class="admin-list-item">
+          <div class="item-info">
+            <strong>${g.name}</strong> — ${g.city}<br>
+            <small>${g.height}см / ${g.weight}кг / ${g.age} лет</small>
+          </div>
+          <div class="item-actions">
+            <button class="btn-edit" onclick="editGirl('${g._id}')">✏️</button>
+            <button class="btn-delete" onclick="deleteGirl('${g._id}')">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function saveGirl() {
+      const id = document.getElementById('editGirlId').value;
+      const files = document.getElementById('admPhotos').files;
+      
+      let photoUrls = [];
+      if (files.length > 0) {
+        const formData = new FormData();
+        for (let f of files) formData.append('photos', f);
+        try {
+          const res = await fetch(API_URL + '/api/upload', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${state.token}` },
+            body: formData
+          });
+          const data = await res.json();
+          photoUrls = data.urls;
+        } catch(e) { showToast('Ошибка загрузки фото', 'error'); return; }
+      }
+
+      const girlData = {
+        name: document.getElementById('admName').value,
+        city: document.getElementById('admCity').value,
+        age: document.getElementById('admAge').value,
+        height: document.getElementById('admHeight').value,
+        weight: document.getElementById('admWeight').value,
+        breast: document.getElementById('admBreast').value,
+        desc: document.getElementById('admDesc').value,
+        photos: photoUrls.length ? photoUrls : (id ? state.girls.find(g=>g._id===id).photos : [])
+      };
+
+      try {
+        await fetch(API_URL + '/api/girls', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.token}`
+          },
+          body: JSON.stringify({
+            action: id ? 'update' : 'add',
+            girl: { ...girlData, _id: id }
+          })
+        });
+        showToast('Сохранено');
+        loadGirls();
+        document.getElementById('editGirlId').value = '';
+        document.getElementById('admName').value = '';
+        // очистка формы...
+      } catch(e) { showToast('Ошибка', 'error'); }
+    }
+
+    function editGirl(id) {
+      const g = state.girls.find(x => x._id == id);
+      if (!g) return;
+      document.getElementById('editGirlId').value = g._id;
+      document.getElementById('admName').value = g.name;
+      document.getElementById('admCity').value = g.city;
+      document.getElementById('admAge').value = g.age;
+      document.getElementById('admHeight').value = g.height;
+      document.getElementById('admWeight').value = g.weight;
+      document.getElementById('admBreast').value = g.breast;
+      document.getElementById('admDesc').value = g.desc;
+      window.scrollTo(0,0);
+    }
+
+    async function deleteGirl(id) {
+      if (!confirm('Удалить?')) return;
+      await fetch(API_URL + '/api/girls', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.token}`
+        },
+        body: JSON.stringify({ action: 'delete', girl: { _id: id } })
+      });
+      loadGirls();
+    }
+
+    function switchAdminTab(tabId) {
+      document.querySelectorAll('.admin-tab-content').forEach(t => t.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      document.getElementById(tabId).style.display = 'block';
+      event.target.classList.add('active');
+      
+      if (tabId === 'girls-tab') loadGirls();
+      if (tabId === 'chats-tab') loadAdminChats();
+    }
+
+    // --- CHAT CLIENT ---
+    function startChatPolling() {
+      if (state.chatPollingInterval) clearInterval(state.chatPollingInterval);
+      state.chatPollingInterval = setInterval(() => {
+        if (state.user && document.getElementById('chatSection').style.display === 'block') {
+          loadChatMessages();
+        }
+      }, 2000);
+    }
+
+    async function loadChatMessages() {
+      if (!state.user) return;
+      try {
+        const res = await fetch(API_URL + '/api/chat', {
+          headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+        const data = await res.json();
+        if (data.messages) renderMessages(data.messages);
+      } catch(e) { console.error(e); }
+    }
+
+    function renderMessages(msgs) {
+      const container = document.getElementById('chatMessages');
+      if (!container) return;
+      
+      // Сохраняем скролл если новые сообщения не пришли
+      const isScrolledDown = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+      
+      container.innerHTML = msgs.map(m => {
+        if (m.type === 'system') return `<div class="chat-msg system">${m.text}</div>`;
+        const cls = m.type === 'user' ? 'user' : 'bot';
+        let text = m.text;
+        if (m.type === 'bot' && m.text.includes('[Оператор]')) {
+           text = `<strong>👨‍💼 Оператор:</strong><br>${m.text.replace('[Оператор] ', '')}`;
+        }
+        return `<div class="chat-msg ${cls}">${text}</div>`;
+      }).join('');
+      
+      if (isScrolledDown || msgs.length < 5) container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      
+      try {
+        const res = await fetch(API_URL + '/api/chat/send', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.token}`
+          },
+          body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        if (data.messages) renderMessages(data.messages);
+        input.value = '';
+      } catch(e) { showToast('Ошибка отправки', 'error'); }
+    }
+
+    // --- CHAT ADMIN ---
+    async function loadAdminChats() {
+      try {
+        const res = await fetch(API_URL + '/api/admin/chats', {
+          headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+        const chats = await res.json();
         
         const list = document.getElementById('adminChatList');
         if (!list) return;
         
-        if (!chats || chats.length === 0) { 
-            console.log('ℹ️ No chats found');
-            list.innerHTML = '<div class="empty-state"><p>Нет чатов</p></div>'; 
-            return; 
+        if (!chats || chats.length === 0) {
+          list.innerHTML = '<div class="empty-state">Нет активных чатов</div>';
+          return;
         }
         
-        list.innerHTML = chats.map(c => {
-            const msgs = c.messages || [];
-            const last = msgs.length > 0 ? msgs[msgs.length-1] : null;
-            const txt = last ? (last.text||'').substring(0,40) : '';
-            const status = c.waitingForOperator ? '⏳ Ждет' : '✅ Активен';
-            const statusClass = c.waitingForOperator ? 'waiting' : 'active';
-            const newMsgClass = c.waitingForOperator ? 'new-message' : '';
-            return `<div class="chat-item ${newMsgClass}">
-                <div class="chat-item-header"><h4>👤 ${c.userId}</h4><span class="status ${statusClass}">${status}</span></div>
-                <div class="chat-item-preview">${txt || '(пусто)'}</div>
-                <div class="chat-item-actions"><button class="open-chat" onclick="window.openAdminChatWith('${c.userId}')">💬 Чат</button><button class="clear-chat" onclick="window.clearChatHistory('${c.userId}')">🗑️</button><button class="delete-btn" onclick="window.deleteChat('${c.userId}')">❌</button></div>
-            </div>`;
+        list.innerHTML = chats.map(chat => {
+          const lastMsg = chat.messages && chat.messages.length > 0 
+            ? chat.messages[chat.messages.length - 1] 
+            : null;
+          const preview = lastMsg ? (lastMsg.text || '').substring(0, 50) : 'Пустой чат';
+          const statusClass = chat.waitingForOperator ? 'waiting' : 'active';
+          const statusText = chat.waitingForOperator ? '⏳ Ждет' : '✅ Активен';
+          
+          return `
+            <div class="chat-item ${chat.waitingForOperator ? 'new-message' : ''}" onclick="openAdminChat('${chat.userId}')">
+              <div class="chat-item-header">
+                <h4>👤 ${chat.userId}</h4>
+                <span class="status ${statusClass}">${statusText}</span>
+              </div>
+              <div class="chat-item-preview">${preview}</div>
+            </div>
+          `;
         }).join('');
-    } catch(e) {
-        console.error('❌ Load admin chats error:', e);
-        const list = document.getElementById('adminChatList');
-        if (list) list.innerHTML = '<div class="empty-state"><p>Ошибка загрузки чатов</p></div>';
+      } catch (e) {
+        console.error('Load admin chats error:', e);
+      }
     }
-};
 
+    // ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ИСТОРИИ
+    window.loadAdminChat = (userId) => {
+      console.log('📥 Loading chat history for:', userId);
+      
+      fetch(API_URL + `/api/admin/chat/${userId}`, {
+        headers: { 'Authorization': `Bearer ${state.token}` }
+      })
+      .then(r => r.json())
+      .then(chat => {
+        console.log('✅ Received chat:', chat);
+        console.log('Messages count:', chat.messages ? chat.messages.length : 0);
+        
+        const container = document.getElementById('adminChatMessages');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        if (!chat.messages || chat.messages.length === 0) {
+          container.innerHTML = '<div class="empty-state">Чат пуст</div>';
+          return;
+        }
+        
+        chat.messages.forEach((msg) => {
+          const div = document.createElement('div');
+          div.className = `chat-msg ${msg.type}`;
+          
+          if (msg.type === 'user') {
+            div.textContent = msg.text;
+            div.style.alignSelf = 'flex-end';
+            div.style.background = 'rgba(103,58,183,0.25)';
+          } 
+          else if (msg.type === 'bot') {
+            if (msg.text && msg.text.includes('[Оператор]')) {
+              div.innerHTML = `<strong>👨‍💼 Оператор:</strong><br>${msg.text.replace('[Оператор] ', '')}`;
+              div.style.alignSelf = 'flex-start';
+              div.style.background = 'rgba(76,175,80,0.2)';
+            } else {
+              div.innerHTML = msg.text; // Упрощено для примера
+              div.style.alignSelf = 'flex-start';
+            }
+          } 
+          else if (msg.type === 'system') {
+            div.className = 'chat-msg system';
+            div.textContent = msg.text;
+            div.style.alignSelf = 'center';
+          }
+          
+          container.appendChild(div);
+        });
+        
+        container.scrollTop = container.scrollHeight;
+        console.log('✅ Chat rendered successfully');
+      })
+      .catch(error => {
+        console.error('❌ Error loading chat:', error);
+      });
+    };
 
+    let adminChatInterval = null;
 
-window.openAdminChatWith = (uid) => {
-    state.adminChatWith = uid;
-    document.getElementById('adminChatTitle').textContent = '💬 Чат с ' + uid;
-    document.getElementById('adminChatModal').classList.add('show');
-    window.loadAdminChat(uid);
-    
-    // Авто-обновление чата каждые 3 секунды
-    if (window.adminChatInterval) clearInterval(window.adminChatInterval);
-    window.adminChatInterval = setInterval(() => {
-        if (state.adminChatWith) window.loadAdminChat(state.adminChatWith);
-    }, 3000);
-};
+    window.openAdminChat = (userId) => {
+      console.log('🔔 Opening chat with:', userId);
+      state.adminChatWith = userId;
+      
+      const titleEl = document.getElementById('adminChatTitle');
+      if (titleEl) titleEl.textContent = '💬 Чат с ' + userId;
+      
+      const modal = document.getElementById('adminChatModal');
+      if (modal) modal.classList.add('show');
+      
+      // Загружаем историю СРАЗУ
+      window.loadAdminChat(userId);
+      
+      // Обновляем каждые 3 секунды
+      if (adminChatInterval) clearInterval(adminChatInterval);
+      adminChatInterval = setInterval(() => {
+        window.loadAdminChat(userId);
+      }, 3000);
+    };
 
-window.closeAdminChat = () => {
-    document.getElementById('adminChatModal').classList.remove('show');
-    state.adminChatWith = null;
-    if (window.adminChatInterval) clearInterval(window.adminChatInterval);
-};
+    window.closeAdminChat = () => {
+      const modal = document.getElementById('adminChatModal');
+      if (modal) modal.classList.remove('show');
+      state.adminChatWith = null;
+      if (adminChatInterval) {
+        clearInterval(adminChatInterval);
+        adminChatInterval = null;
+      }
+    };
 
-window.loadAdminChat = (uid) => {
-    console.log('📡 Loading admin chat with:', uid);
-    apiCall(`/api/chat?userId=${uid}`).then(data => {
-         console.log('✅ Admin chat loaded, messages:', data.messages?.length || 0);
-         const container = document.getElementById('adminChatMessages'); 
-         container.innerHTML = '';
-         (data.messages || []).forEach(msg => {
-             const div = document.createElement('div'); 
-             div.className = `chat-msg ${msg.type}`;
-             if (msg.type === 'user') div.textContent = msg.text;
-             else if (msg.type === 'bot') div.innerHTML = formatBotMessage(msg);
-             container.appendChild(div);
-         });
-         container.scrollTop = container.scrollHeight;
-    }).catch(err => {
-        console.error('❌ Load admin chat error:', err);
-    });
-};
-
-window.sendAdminReply = async () => {
-    const inp = document.getElementById('adminChatInput'); 
-    const text = inp.value.trim();
-    if (!text || !state.adminChatWith) return;
-    console.log('📩 Admin sending reply to:', state.adminChatWith, 'Text:', text);
-    try {
-        await apiCall('/api/admin/chat/reply', { method: 'POST', body: JSON.stringify({ userId: state.adminChatWith, text }) });
-        inp.value = ''; 
-        window.loadAdminChat(state.adminChatWith); 
-        window.loadAdminChats(); 
-        showToast('Ответ отправлен', 'success');
-        console.log('✅ Admin reply sent');
-    } catch(e) {
-        console.error('❌ Admin reply error:', e);
-        showToast('Ошибка отправки', 'error');
-    }
-};
-
-window.clearChatHistory = async (uid) => {
-    if(!uid) uid = state.adminChatWith; if(!uid) return;
-    try { await apiCall(`/api/admin/chat/${uid}/clear`, { method: 'PUT' }); window.loadAdminChat(uid); window.loadAdminChats(); showToast('Очищено', 'success'); } catch(e) {}
-};
-
-window.deleteChat = async (uid) => {
-    if (!confirm('Удалить чат навсегда?')) return;
-    try {
-        await apiCall(`/api/admin/chat/${uid}`, { method: 'DELETE' });
-        if(state.adminChatWith === uid) window.closeAdminChat();
-        window.loadAdminChats();
-        showToast('Чат удалён', 'success');
-    } catch(e) { showToast('Ошибка удаления', 'error'); }
-};
-
-window.resetClientBot = async () => {
-    if (!state.adminChatWith) return;
-    try {
-        await apiCall(`/api/admin/chat/${state.adminChatWith}/complete`, { method: 'PUT' });
-        showToast('Чат завершен, бот сброшен', 'success');
+    window.sendAdminReply = async () => {
+      const input = document.getElementById('adminChatInput');
+      const text = input ? input.value.trim() : '';
+      
+      if (!text || !state.adminChatWith) {
+        alert('Введите сообщение');
+        return;
+      }
+      
+      try {
+        await fetch(API_URL + '/api/admin/chat/reply', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.token}`
+          },
+          body: JSON.stringify({
+            userId: state.adminChatWith,
+            text: text
+          })
+        });
+        
+        if (input) input.value = '';
         window.loadAdminChat(state.adminChatWith);
         window.loadAdminChats();
-    } catch(e) { console.error('Reset bot error:', e); showToast('Ошибка завершения', 'error'); }
-};
+        
+      } catch (error) {
+        console.error('Error sending reply:', error);
+        alert('Ошибка отправки');
+      }
+    };
 
-window.completeAdminChat = async (userId) => {
-    if (!confirm('Завершить чат с клиентом? Бот будет перезапущен.')) return;
-    try {
-        await apiCall(`/api/admin/chat/${userId}/complete`, { method: 'PUT' });
-        showToast('Чат завершен', 'success');
-        window.loadAdminChats();
-        if (state.adminChatWith === userId) window.closeAdminChat();
-    } catch(e) { console.error('Complete chat error:', e); showToast('Ошибка', 'error'); }
-};
+    window.completeAdminChat = async () => {
+      if (!state.adminChatWith) return;
+      if (!confirm('Завершить чат? Бот будет перезапущен.')) return;
+      
+      try {
+        await fetch(API_URL + `/api/admin/chat/${state.adminChatWith}/complete`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+        showToast('Чат завершен');
+        closeAdminChat();
+        loadAdminChats();
+      } catch (e) { alert('Ошибка'); }
+    };
 
-window.clearAdminChat = async (userId) => {
-    if (!confirm('ОЧИСТИТЬ ВСЮ ИСТОРИЮ ЧАТА? Это действие необратимо!')) return;
-    try {
-        await apiCall(`/api/admin/chat/${userId}/clear`, { method: 'PUT' });
-        showToast('Чат очищен', 'success');
-        window.loadAdminChats();
-        if (state.adminChatWith === userId) window.loadAdminChat(userId);
-    } catch(e) { console.error('Clear chat error:', e); showToast('Ошибка', 'error'); }
-};
+    window.clearAdminChat = async () => {
+      if (!state.adminChatWith) return;
+      if (!confirm('ОЧИСТИТЬ ВСЮ ИСТОРИЮ?')) return;
+      
+      try {
+        await fetch(API_URL + `/api/admin/chat/${state.adminChatWith}/clear`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+        showToast('Чат очищен');
+        window.loadAdminChat(state.adminChatWith);
+        loadAdminChats();
+      } catch (e) { alert('Ошибка'); }
+    };
 
-window.closeAdminChat = () => { 
-    document.getElementById('adminChatModal').classList.remove('show'); 
-    state.adminChatWith = null; 
-    if (window.adminChatInterval) clearInterval(window.adminChatInterval);
-};
-
-window.saveSiteSettings = async () => {
-    const settings = { mainTitle: document.getElementById('admMainTitle').value, mainSubtitle: document.getElementById('admMainSubtitle').value, title: document.getElementById('admSiteTitle').value, desc: document.getElementById('admSiteDesc').value, phone: document.getElementById('admSitePhone').value };
-    try { await apiCall('/api/settings', { method: 'PUT', body: JSON.stringify(settings) }); showToast('Настройки сохранены', 'success'); loadSettings(); } catch(e) { showToast('Ошибка', 'error'); }
-};
-
-// === UTILS & MODALS ===
-function showToast(msg, type) { const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg; document.body.appendChild(t); setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000); }
-function esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
-
-function confirmAge() { document.getElementById('ageModal').classList.remove('show'); }
-function denyAge() { window.location.href = 'https://google.com'; }
-function closeAgeModal() { document.getElementById('ageModal').classList.remove('show'); }
-function openAuthModal() { document.getElementById('authModal').classList.add('show'); }
-function closeAuthModal() { document.getElementById('authModal').classList.remove('show'); }
-function switchAuthTab(tab) {
-    document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
-    document.getElementById('loginForm').style.display = tab==='login' ? 'block' : 'none';
-    document.getElementById('registerForm').style.display = tab==='register' ? 'block' : 'none';
-}
-function closeProfileModal() { document.getElementById('profileModal').classList.remove('show'); }
-function openCitiesModal() {
-    const list = document.getElementById('citiesList');
-    list.innerHTML = ['Луганск', 'Стаханов', 'Первомайск'].map(city => {
-        const cnt = state.girls.filter(g => g.city === city).length;
-        return `<div class="city-item" onclick="filterCity('${city}');closeCitiesModal()"><span class="name">${city}</span><span class="count">${cnt} анкет</span></div>`;
-    }).join('');
-    document.getElementById('citiesModal').classList.add('show');
-}
-function closeCitiesModal() { document.getElementById('citiesModal').classList.remove('show'); }
-function openPrivacyPolicy() { document.getElementById('privacyModal').classList.add('show'); }
-function closePrivacyPolicy() { document.getElementById('privacyModal').classList.remove('show'); }
-function toggleProfileDropdown() { if (!state.user) { openAuthModal(); return; } document.getElementById('profileDropdown').classList.toggle('show'); }
-function closeProfileDropdown() { document.getElementById('profileDropdown').classList.remove('show'); }
-document.addEventListener('click', e => { const pd = document.getElementById('profileDropdown'); if (pd.classList.contains('show') && !pd.contains(e.target) && !e.target.closest('.header-profile-btn')) pd.classList.remove('show'); });
-
-function renderGirls() {
-    const girls = state.currentCityFilter === 'all' ? state.girls : state.girls.filter(g => g.city === state.currentCityFilter);
-    const grid = document.getElementById('girlsGrid');
-    if (girls.length === 0) { grid.innerHTML = '<div class="empty-state"><div class="icon">😔</div><p>Анкет пока нет</p></div>'; return; }
-    grid.innerHTML = girls.map(g => createGirlCard(g)).join('');
-}
-function createGirlCard(g) {
-    const mp = (g.photos && g.photos[0]) || '';
-    const ih = mp ? `<img class="girl-card-img" src="${mp}" alt="${g.name}">` : '<div class="girl-card-img-placeholder">👩</div>';
-    return `<div class="girl-card" onclick="openProfile('${g._id}')">${ih}<div class="girl-card-info">
-        <div class="girl-card-top"><span class="girl-card-name">${g.name}</span><span class="girl-card-city">${g.city}</span></div>
-        <p class="girl-card-desc">${g.desc}</p>
-        <div class="girl-card-stats"><span class="stat-tag">📏 ${g.height} см</span><span class="stat-tag">⚖️ ${g.weight} кг</span><span class="stat-tag">👙 ${g.breast}</span><span class="stat-tag">🎂 ${g.age} лет</span></div>
-        <div class="girl-card-payment">💰 Оплата девушкам в руки</div>
-        <div class="girl-card-actions"><button class="btn-open" onclick="event.stopPropagation();openProfile('${g._id}')">Открыть анкету</button><button class="btn-order" onclick="event.stopPropagation();orderGirl('${g._id}')">Заказать</button></div>
-    </div></div>`;
-}
-function openProfile(id) {
-    const g = state.girls.find(x => x._id == id); if (!g) return;
-    
-    // Главное фото (первое)
-    const mainPhoto = (g.photos && g.photos[0]) || '';
-    const mainPhotoHtml = mainPhoto 
-        ? `<img class="profile-modal-img" src="${mainPhoto}" alt="${g.name}" onclick="showFullSize(this)">` 
-        : '<div class="profile-modal-img-placeholder">👩</div>';
-    
-    // Галерея всех остальных фото (если их больше 1)
-    let galleryHtml = '';
-    if (g.photos && g.photos.length > 1) {
-        galleryHtml = '<div class="profile-photo-gallery">' + 
-            g.photos.slice(1).map(photo => 
-                `<img src="${photo}" class="gallery-photo" onclick="showFullSize(this)" alt="Photo">`
-            ).join('') + 
-        '</div>';
+    // --- UTILS ---
+    function showToast(msg, type='success') {
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      t.style.background = type === 'error' ? '#F44336' : '#333';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
     }
-    
-    const sH = (g.services || []).map(s => `<div class="profile-service"><span class="name">${s.name}</span><span class="price">${s.price}₽</span></div>`).join('');
-    
-    document.getElementById('profileContent').innerHTML = `
-        ${mainPhotoHtml}
-        ${galleryHtml}
-        <div class="profile-detail">
-            <h2>${g.name}</h2>
-            <div class="city">📍 ${g.city}</div>
-            <p class="desc">${g.desc}</p>
-            <div class="section-title">Характеристики</div>
-            <div class="profile-stats-grid">
-                <div class="profile-stat"><div class="label">Рост</div><div class="value">${g.height} см</div></div>
-                <div class="profile-stat"><div class="label">Вес</div><div class="value">${g.weight} кг</div></div>
-                <div class="profile-stat"><div class="label">Грудь</div><div class="value">${g.breast}</div></div>
-                <div class="profile-stat"><div class="label">Возраст</div><div class="value">${g.age} лет</div></div>
-            </div>
-            <div class="section-title">Предпочтения</div>
-            <p class="desc">${g.prefs}</p>
-            <div class="section-title">Услуги</div>
-            <div class="profile-services">${sH}</div>
-            <div class="profile-payment">💰 Оплата девушкам в руки</div>
-            <button class="profile-order-btn" onclick="orderGirl('${g._id}');closeProfileModal()">Заказать</button>
-        </div>
-    `;
-    document.getElementById('profileModal').classList.add('show');
-}
 
-// Показать фото на весь экран
-window.showFullSize = function(imgElement) {
-    const modal = document.createElement('div');
-    modal.className = 'fullsize-modal show';
-    modal.onclick = () => modal.remove();
-    
-    const close = document.createElement('span');
-    close.className = 'fullsize-close';
-    close.innerHTML = '&times;';
-    close.onclick = (e) => { e.stopPropagation(); modal.remove(); };
-    
-    const img = document.createElement('img');
-    img.src = imgElement.src;
-    img.onclick = (e) => e.stopPropagation();
-    
-    modal.appendChild(close);
-    modal.appendChild(img);
-    document.body.appendChild(modal);
-};
-function renderCatalogFilters() {
-    const cities = ['Луганск', 'Стаханов', 'Первомайск']; const c = document.getElementById('catalogFilters');
-    let h = `<button class="filter-btn ${state.currentCityFilter === 'all' ? 'active' : ''}" onclick="filterCity('all')">Все</button>`;
-    cities.forEach(city => { h += `<button class="filter-btn ${state.currentCityFilter === city ? 'active' : ''}" onclick="filterCity('${city}')">${city}</button>`; });
-    c.innerHTML = h;
-}
-function filterCity(city) { state.currentCityFilter = city; renderCatalogFilters(); renderGirls(); }
-
-window.renderAdminGirls = () => {
-    const list = document.getElementById('adminGirlsList');
-    if (!list) return;
-    if (!state.girls || state.girls.length === 0) {
-        list.innerHTML = '<div class="empty-state"><p>Анкет нет</p></div>';
-        return;
-    }
-    list.innerHTML = state.girls.map(g => `
-        <div class="admin-list-item">
-            <div class="item-info"><strong>${g.name}</strong> — ${g.city}</div>
-            <div class="item-actions">
-                <button class="admin-btn secondary" onclick="editGirl('${g._id}')">✏️</button>
-                <button class="admin-btn danger" onclick="deleteGirl('${g._id}')">🗑️</button>
-            </div>
-        </div>
-    `).join('');
-};
-
-init();
-</script>
+    // Init
+    initAuth();
+    loadGirls();
+  </script>
 </body>
 </html>
