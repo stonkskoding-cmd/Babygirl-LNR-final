@@ -3,631 +3,453 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-
 const app = express();
 
-// ===== CORS =====
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (origin.includes('onrender.com') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return callback(null, true);
-    }
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
-app.options('*', cors());
+// --- КОНФИГУРАЦИЯ ---
+const PORT = process.env.PORT || 3000;
+const MONGODB_URI = process.env.MONGODB_URI;
+const JWT_SECRET = process.env.JWT_SECRET || 'secret_key_change_in_prod';
 
-// ===== Middleware =====
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb', parameterLimit: 50000 }));
+if (!MONGODB_URI) {
+  console.error('❌ ОШИБКА: MONGODB_URI не задан в переменных окружения!');
+  process.exit(1);
+}
 
-// ===== File Upload =====
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+// --- СОЕДИНЕНИЕ С БД ---
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✅ MongoDB подключена'))
+  .catch(err => console.error('❌ Ошибка подключения к MongoDB:', err));
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|webp|gif/i;
-    const extname = allowed.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowed.test(file.mimetype);
-    if (extname && mimetype) cb(null, true);
-    else cb(new Error('Только изображения (jpeg, jpg, png, webp, gif)'));
-  }
-});
-
-// ===== MongoDB =====
-let dbConnected = false;
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/babgirl')
-  .then(() => { 
-    dbConnected = true;
-    console.log('✅ MongoDB Connected');
-  })
-  .catch(err => { 
-    console.error('❌ MongoDB Error:', err.message);
-    dbConnected = false;
-  });
-
-// ===== Models =====
+// --- МОДЕЛИ ---
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['admin', 'client'], default: 'client' }
-}, { timestamps: true });
+});
 const User = mongoose.model('User', UserSchema);
 
 const GirlSchema = new mongoose.Schema({
-  name: { type: String, default: '' },
-  city: { type: String, default: '' },
-  photos: [{ type: String, default: '' }],
-  desc: { type: String, default: '' },
-  height: { type: String, default: '' },
-  weight: { type: String, default: '' },
-  breast: { type: String, default: '' },
-  age: { type: String, default: '' },
-  prefs: { type: String, default: '' },
-  services: [{ name: { type: String, default: '' }, price: { type: String, default: '' } }]
-}, { timestamps: true });
+  name: String,
+  city: String,
+  age: Number,
+  height: Number,
+  weight: Number,
+  breast: String,
+  desc: String,
+  prefs: String,
+  photos: [String],
+  services: [{ name: String, price: Number }],
+  createdAt: { type: Date, default: Date.now }
+});
 const Girl = mongoose.model('Girl', GirlSchema);
 
 const ChatSchema = new mongoose.Schema({
-  userId: { type: String, required: true, unique: true },
+  userId: { type: String, required: true, unique: true }, // username клиента
   messages: [{
-    type: { type: String, enum: ['user', 'bot', 'system'], required: true },
-    text: { type: String, default: '' },
-    extra: mongoose.Schema.Types.Mixed,
+    type: { type: String, enum: ['user', 'bot', 'system'] },
+    text: String,
+    extra: Object,
     time: { type: Date, default: Date.now }
   }],
-  waitingForOperator: { type: Boolean, default: false },
-  botEnabled: { type: Boolean, default: true },
   botStep: { type: String, default: 'greet' },
-  selectedGirl: mongoose.Schema.Types.Mixed
-}, { timestamps: true });
+  waitingForOperator: { type: Boolean, default: false },
+  selectedGirl: Object,
+  botEnabled: { type: Boolean, default: true },
+  updatedAt: { type: Date, default: Date.now }
+});
 const Chat = mongoose.model('Chat', ChatSchema);
 
 const SettingsSchema = new mongoose.Schema({
-  mainTitle: { type: String, default: 'Анкеты девушек' },
-  mainSubtitle: { type: String, default: 'Выберите идеальную компанию' },
-  title: { type: String, default: 'BABYGIRL_LNR' },
-  desc: { type: String, default: '' },
-  phone: { type: String, default: '' },
-  globalBotEnabled: { type: Boolean, default: true }
-}, { timestamps: true });
+  key: { type: String, unique: true },
+  value: String
+});
 const Settings = mongoose.model('Settings', SettingsSchema);
 
-// ===== Auth Middleware =====
+// --- MIDDLEWARE ---
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.use(express.json());
+app.use(express.static('public'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Создаем папку uploads если нет
+if (!fs.existsSync('./uploads')) {
+  fs.mkdirSync('./uploads', { recursive: true });
+}
+
+// Настройка Multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueName + path.extname(file.originalname));
+  }
+});
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|webp|gif/;
+    const extname = allowed.test(path.extname(file.originalname).toLowerCase());
+    cb(null, extname);
+  }
+});
+
+// Аутентификация
 const authenticate = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ message: 'Нет токена' });
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ message: 'Нет токена' });
+  
+  const token = authHeader.split(' ')[1];
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET || 'default_secret_change_in_prod');
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
     next();
-  } catch (err) { 
-    console.error('Token error:', err.message);
-    res.status(401).json({ message: 'Неверный токен' }); 
+  } catch (e) {
+    res.status(401).json({ message: 'Неверный токен' });
   }
 };
 
 const isAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'admin') return res.status(403).json({ message: 'Только для админов' });
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Доступ запрещен' });
+  }
   next();
 };
 
-// ===== Init Data =====
+// --- ИНИЦИАЛИЗАЦИЯ ДАННЫХ ---
 async function initData() {
-  try {
-    // Wait for DB connection
-    let attempts = 0;
-    while (!dbConnected && attempts < 10) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      attempts++;
-    }
-    
-    if (!dbConnected) {
-      console.error('❌ Could not connect to MongoDB after 10 seconds');
-      return;
-    }
-
-    // Generate random admin credentials
-    const randomPass1 = Math.random().toString(36).slice(-10);
-    const randomPass2 = Math.random().toString(36).slice(-10);
-    const admins = [
-      { username: 'admin_' + Math.random().toString(36).slice(-6), pass: randomPass1 },
-      { username: 'operator_' + Math.random().toString(36).slice(-6), pass: randomPass2 }
-    ];
-    
-    let firstRun = true;
-    for (const a of admins) {
-      const exist = await User.findOne({ username: a.username });
-      if (!exist) {
-        const hash = await bcrypt.hash(a.pass, 10);
-        await User.create({ username: a.username, password: hash, role: 'admin' });
-      } else {
-        firstRun = false;
-      }
-    }
-    
-    // Only print credentials on first run
-    if (firstRun) {
-      console.log('\n' + '='.repeat(50));
-      console.log('🔐 ADMIN CREDENTIALS (SAVE THIS!):');
-      console.log('='.repeat(50));
-      admins.forEach((a, i) => {
-        console.log(`${i+1}. Login: ${a.username}`);
-        console.log(`   Pass: ${a.pass}`);
-      });
-      console.log('='.repeat(50) + '\n');
-    }
-
-    // NO demo girls - admin will add real ones
-  } catch (err) {
-    console.error('❌ Init data error:', err.message);
+  const adminCount = await User.countDocuments({ role: 'admin' });
+  if (adminCount === 0) {
+    const randomPass = Math.random().toString(36).slice(-10);
+    const hash = await bcrypt.hash(randomPass, 10);
+    await User.create({
+      username: 'admin_' + Math.random().toString(36).slice(-6),
+      password: hash,
+      role: 'admin'
+    });
+    console.log('\n🔐 ADMIN CREATED (SAVE THIS!):');
+    console.log(`Login: admin_... (check DB or logs above)`);
+    console.log(`Pass: ${randomPass}\n`);
   }
 }
 initData();
 
-// ===== ROUTES =====
+// --- ROUTES ---
 
 // Health check
-app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 // Auth
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { username, password } = req.body || {};
-    if (!username || !password) return res.status(400).json({ message: 'Заполните все поля' });
-    
-    const exist = await User.findOne({ username });
-    if (exist) return res.status(400).json({ message: 'Логин уже занят' });
-    
-    const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, password: hashed, role: 'client' });
-    
-    const token = jwt.sign({ id: user._id, username: user.username, role: user.role }, process.env.JWT_SECRET || 'default_secret_change_in_prod');
-    res.json({ token, user: { username: user.username, role: user.role } });
-  } catch (e) { 
-    console.error('Register error:', e.message);
-    res.status(500).json({ message: 'Ошибка сервера при регистрации' }); 
-  }
-});
-
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { username, password } = req.body || {};
-    if (!username || !password) return res.status(400).json({ message: 'Заполните все поля' });
-    
+    const { username, password } = req.body;
     const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: 'Неверный логин или пароль' });
-    
-    const validPass = await bcrypt.compare(password, user.password);
-    if (!validPass) return res.status(400).json({ message: 'Неверный логин или пароль' });
-    
-    const token = jwt.sign({ id: user._id, username: user.username, role: user.role }, process.env.JWT_SECRET || 'default_secret_change_in_prod');
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ message: 'Неверные данные' });
+    }
+    const token = jwt.sign({ username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { username: user.username, role: user.role } });
-  } catch (e) { 
-    console.error('Login error:', e.message);
-    res.status(500).json({ message: 'Ошибка сервера при входе' }); 
+  } catch (e) {
+    res.status(500).json({ message: e.message });
   }
 });
 
-// Girls - Get all
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (await User.findOne({ username })) {
+      return res.status(400).json({ message: 'Пользователь существует' });
+    }
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, password: hash, role: 'client' });
+    const token = jwt.sign({ username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, user: { username: user.username, role: user.role } });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Girls
 app.get('/api/girls', async (req, res) => {
   try {
-    const girls = await Girl.find().sort({ createdAt: -1 }).lean();
-    res.json(girls || []);
-  } catch (e) { 
-    console.error('Get girls error:', e.message);
-    res.status(500).json([]); 
-  }
+    const girls = await Girl.find().sort({ createdAt: -1 });
+    res.json(girls);
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// Girls - CRUD (admin only)
 app.post('/api/girls', authenticate, isAdmin, async (req, res) => {
   try {
-    const { action, girl } = req.body || {};
-    if (!action) return res.status(400).json({ message: 'Не указано действие' });
-    
+    const { action, girl } = req.body;
     if (action === 'add') {
-      if (!girl || !girl.name) return res.status(400).json({ message: 'Имя обязательно' });
-      const newGirl = await Girl.create({
-        name: girl.name || '',
-        city: girl.city || '',
-        photos: Array.isArray(girl.photos) ? girl.photos : [],
-        desc: girl.desc || '',
-        height: girl.height || '',
-        weight: girl.weight || '',
-        breast: girl.breast || '',
-        age: girl.age || '',
-        prefs: girl.prefs || '',
-        services: Array.isArray(girl.services) ? girl.services : []
-      });
+      const newGirl = await Girl.create(girl);
       return res.json(newGirl);
     } else if (action === 'update') {
-      if (!girl || !girl._id) return res.status(400).json({ message: 'ID не указан' });
-      const updated = await Girl.findByIdAndUpdate(girl._id, {
-        name: girl.name || '',
-        city: girl.city || '',
-        photos: Array.isArray(girl.photos) ? girl.photos : [],
-        desc: girl.desc || '',
-        height: girl.height || '',
-        weight: girl.weight || '',
-        breast: girl.breast || '',
-        age: girl.age || '',
-        prefs: girl.prefs || '',
-        services: Array.isArray(girl.services) ? girl.services : []
-      }, { new: true });
-      if (!updated) return res.status(404).json({ message: 'Анкета не найдена' });
+      const updated = await Girl.findByIdAndUpdate(girl._id, girl, { new: true });
       return res.json(updated);
     } else if (action === 'delete') {
-      if (!girl || !girl._id) return res.status(400).json({ message: 'ID не указан' });
-      const deleted = await Girl.findByIdAndDelete(girl._id);
-      if (!deleted) return res.status(404).json({ message: 'Анкета не найдена' });
+      await Girl.findByIdAndDelete(girl._id);
       return res.json({ success: true });
     }
     res.status(400).json({ message: 'Неверное действие' });
-  } catch (e) { 
-    console.error('Girls CRUD error:', e.message);
-    res.status(500).json({ message: 'Ошибка: ' + e.message }); 
-  }
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// Upload (admin only)
-app.post('/api/upload', authenticate, isAdmin, upload.array('photos', 4), (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: 'Файлы не загружены' });
-    }
-    // Build full URL for Render
-    const protocol = req.headers['x-forwarded-proto'] || 'http';
-    const host = req.headers.host || 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
-    const urls = req.files.map(f => `${baseUrl}/uploads/${f.filename}`);
-    res.json({ urls });
-  } catch (e) {
-    console.error('Upload error:', e.message);
-    res.status(500).json({ message: 'Ошибка загрузки: ' + e.message });
-  }
+// Upload
+app.post('/api/upload', authenticate, isAdmin, upload.array('photos', 10), (req, res) => {
+  const urls = req.files.map(f => `/uploads/${f.filename}`);
+  res.json({ urls });
 });
 
-// Chat - Get current user chat
+// Chat Client
 app.get('/api/chat', authenticate, async (req, res) => {
   try {
-    console.log('📬 GET /api/chat - User:', req.user.username);
-    let chat = await Chat.findOne({ userId: req.user.username }).lean();
-    
-    // Если чат пустой (только создан) - автоматически добавляем приветствие от бота
-    if (!chat) {
-      console.log('🆕 Creating new chat for user:', req.user.username);
-      chat = await Chat.create({ 
-        userId: req.user.username, 
-        messages: [],
-        botStep: 'greet',
-        waitingForOperator: false,
-        selectedGirl: null
-      });
-    }
-    
-    // Если чат есть но сообщений нет - добавляем приветственное сообщение
-    if (chat.messages.length === 0) {
-      console.log('💬 Empty chat - adding welcome message');
-      chat.messages.push({
-        type: 'bot',
-        text: 'Здравствуйте! 👋 Добро пожаловать в BABYGIRL_LNR!\nНапишите ваш город (Луганск, Стаханов или Первомайск)',
-        time: new Date()
-      });
-      chat.botStep = 'asking_city';
-      await Chat.updateOne(
-        { userId: req.user.username },
-        { $set: { messages: chat.messages, botStep: 'asking_city' } }
-      );
-    }
-    
-    console.log('✅ Returning chat with', chat.messages.length, 'messages');
-    res.json(chat);
-  } catch (e) { 
-    console.error('❌ Get chat error:', e.message);
-    res.status(500).json({ messages: [], userId: req.user.username }); 
-  }
-});
-
-// Chat - Init with girl
-app.post('/api/chat/init', authenticate, async (req, res) => {
-  try {
-    const { girlId } = req.body || {};
-    if (!girlId) return res.status(400).json({ message: 'girlId обязателен' });
-    
-    const girl = await Girl.findById(girlId);
-    if (!girl) return res.status(404).json({ message: 'Девушка не найдена' });
-
     let chat = await Chat.findOne({ userId: req.user.username });
+    
     if (!chat) {
-      chat = await Chat.create({ 
-        userId: req.user.username, 
-        messages: [],
-        botStep: 'greet',
-        waitingForOperator: false,
-        selectedGirl: null
+      // Создаем новый чат с приветствием
+      chat = await Chat.create({
+        userId: req.user.username,
+        messages: [{
+          type: 'bot',
+          text: 'Здравствуйте! 👋 Добро пожаловать в BABYGIRL_LNR!\nНапишите ваш город (Луганск, Стаханов или Первомайск)',
+          time: new Date()
+        }],
+        botStep: 'asking_city',
+        waitingForOperator: false
       });
+    } else if (chat.messages.length === 0) {
+       // Если чат есть но пуст (редкий кейс), добавляем приветствие
+       chat.messages.push({
+          type: 'bot',
+          text: 'Здравствуйте! 👋 Напишите ваш город (Луганск, Стаханов или Первомайск)',
+          time: new Date()
+       });
+       chat.botStep = 'asking_city';
+       await chat.save();
     }
     
-    chat.messages = [];
-    chat.botStep = 'girl_selected';
-    chat.selectedGirl = girl;
-    chat.waitingForOperator = false;
-
-    chat.messages.push(
-      { type: 'bot', text: 'Здравствуйте! 👋 Вы выбрали:', time: new Date() },
-      { type: 'bot', text: '', extra: { type: 'profile', girl }, time: new Date() },
-      { type: 'bot', text: '💰 Оплата девушке в руки. Выберите услугу:', extra: { type: 'services', girl }, time: new Date() }
-    );
-    await chat.save();
-    res.json({ messages: chat.messages });
-  } catch (e) { 
-    console.error('Chat init error:', e.message);
-    res.status(500).json({ message: 'Ошибка инициализации чата' }); 
+    res.json(chat);
+  } catch (e) {
+    console.error('Get chat error:', e);
+    res.status(500).json({ messages: [] });
   }
 });
 
-// Chat - Send message
 app.post('/api/chat/send', authenticate, async (req, res) => {
   try {
-    console.log('📩 NEW MESSAGE - User:', req.user.username, 'Text:', req.body.text);
-    const { text } = req.body || {};
-    if (!text) return res.status(400).json({ message: 'Текст сообщения пуст' });
-    
+    const { text } = req.body;
     let chat = await Chat.findOne({ userId: req.user.username });
+    
     if (!chat) {
-      console.log('🆕 Creating new chat for user:', req.user.username);
-      chat = await Chat.create({ 
-        userId: req.user.username, 
-        messages: [],
-        botStep: 'greet'
-      });
+      chat = await Chat.create({ userId: req.user.username, messages: [], botStep: 'greet' });
     }
-
-    // Add user message
-    chat.messages.push({ type: 'user', text: text || '', time: new Date() });
     
-    const settings = await Settings.findOne();
-    const botEnabled = chat.botEnabled && (settings?.globalBotEnabled !== false);
+    chat.messages.push({ type: 'user', text, time: new Date() });
     
-    // Bot logic - only if not waiting for operator and bot is enabled
-    if (!chat.waitingForOperator && botEnabled) {
-      const lower = (text || '').toLowerCase();
-      let botReply = null;
-
-      if (chat.botStep === 'greet' || chat.botStep === 'asking_city') {
+    // Логика бота (упрощенная FSM)
+    if (!chat.waitingForOperator && chat.botEnabled) {
+      const lower = text.toLowerCase();
+      
+      if (chat.botStep === 'asking_city' || chat.botStep === 'greet') {
         const cities = ['луганск', 'стаханов', 'первомайск'];
         const city = cities.find(c => lower.includes(c));
         if (city) {
-          const girls = await Girl.find({ city: new RegExp(city, 'i') }).lean();
-          if (girls && girls.length > 0) {
-            chat.botStep = 'picking_girl';
-            botReply = { text: `Отлично! В ${city.charAt(0).toUpperCase() + city.slice(1)} есть ${girls.length} анкет:`, extra: { type: 'girls_list', girls } };
-          } else {
-            botReply = { text: `В городе ${city} пока нет анкет.`, extra: { type: 'text' } };
-          }
+          const girls = await Girl.find({ city: new RegExp(city, 'i') });
+          chat.botStep = 'picking_girl';
+          chat.messages.push({
+            type: 'bot',
+            text: `В городе ${city} найдено анкет: ${girls.length}. Напишите имя девушки.`,
+            extra: { type: 'girls_list', count: girls.length }
+          });
         } else {
-          chat.botStep = 'asking_city';
-          botReply = { text: 'Напишите город (Луганск, Стаханов или Первомайск).', extra: { type: 'text' } };
+          chat.messages.push({ type: 'bot', text: 'Пожалуйста, напишите название города: Луганск, Стаханов или Первомайск.' });
         }
       } 
       else if (chat.botStep === 'picking_girl') {
-        const girl = await Girl.findOne({ name: new RegExp(lower, 'i') }).lean();
+        const girl = await Girl.findOne({ name: new RegExp(lower, 'i') });
         if (girl) {
           chat.selectedGirl = girl;
-          chat.botStep = 'girl_selected';
-          botReply = { text: '💰 Оплата в руки. Выберите услугу:', extra: { type: 'services', girl } };
+          chat.botStep = 'picking_service';
+          let servicesList = girl.services.map(s => `- ${s.name}: ${s.price}₽`).join('\n');
+          chat.messages.push({
+            type: 'bot',
+            text: `Вы выбрали ${girl.name}.\nУслуги:\n${servicesList}\n\nНапишите название услуги для заказа.`,
+            extra: { type: 'services', girlId: girl._id }
+          });
         } else {
-          botReply = { text: 'Напишите имя девушки из списка.', extra: { type: 'text' } };
+          chat.messages.push({ type: 'bot', text: 'Девушка не найдена. Попробуйте ввести имя еще раз.' });
         }
-      } 
-      else if (chat.botStep === 'girl_selected' && chat.selectedGirl) {
-        const services = chat.selectedGirl.services || [];
-        const service = services.find(s => lower.includes((s.name || '').toLowerCase()));
+      }
+      else if (chat.botStep === 'picking_service' && chat.selectedGirl) {
+        const serviceName = lower;
+        const service = chat.selectedGirl.services.find(s => s.name.toLowerCase().includes(serviceName));
+        
         if (service) {
           chat.waitingForOperator = true;
-          chat.botStep = 'waiting';
-          botReply = { text: `✅ Вы выбрали: ${service.name} — ${service.price}₽\nЗаявка в обработке.`, extra: { type: 'processing' } };
+          chat.botStep = 'waiting_operator';
+          chat.messages.push({
+            type: 'bot',
+            text: `✅ Заказ оформлен: ${service.name} (${service.price}₽).\nОжидайте подтверждения оператора.`,
+            extra: { type: 'processing' }
+          });
         } else {
-          botReply = { text: 'Напишите название услуги (например: Встреча).', extra: { type: 'text' } };
+          chat.messages.push({ type: 'bot', text: 'Услуга не найдена. Напишите точное название из списка.' });
         }
-      } 
-      else if (chat.botStep === 'waiting') {
-        botReply = { text: 'Заявка в обработке, ожидайте оператора.', extra: { type: 'text' } };
       }
-
-      if (botReply) {
-        chat.messages.push({ type: 'bot', text: botReply.text || '', extra: botReply.extra || {}, time: new Date() });
+      else if (chat.botStep === 'waiting_operator') {
+        chat.messages.push({ type: 'bot', text: 'Заявка уже передана оператору. Пожалуйста, ожидайте.' });
       }
     }
-
+    
+    chat.updatedAt = new Date();
     await chat.save();
-    console.log('💬 CHAT SAVED - Total messages:', chat.messages.length, 'Waiting for operator:', chat.waitingForOperator);
-    res.json({ messages: chat.messages || [] });
-  } catch (e) { 
-    console.error('❌ Chat send error:', e.message);
-    res.status(500).json({ message: 'Ошибка отправки сообщения' }); 
+    res.json({ messages: chat.messages });
+  } catch (e) {
+    console.error('Send message error:', e);
+    res.status(500).json({ message: e.message });
   }
 });
 
-// Admin - Get all chats
+// Admin Chats
 app.get('/api/admin/chats', authenticate, isAdmin, async (req, res) => {
   try {
-    console.log('📋 ADMIN CHATS REQUEST - User:', req.user.username);
-    const chats = await Chat.find().sort({ updatedAt: -1 }).lean();
-    console.log('📦 FOUND CHATS:', chats.length);
-    if (chats.length > 0) {
-      console.log('📊 FIRST CHAT SAMPLE:', JSON.stringify({
-        userId: chats[0]?.userId,
-        messagesCount: chats[0]?.messages?.length,
-        waitingForOperator: chats[0]?.waitingForOperator,
-        lastMessage: chats[0]?.messages?.[chats[0]?.messages?.length - 1]?.text?.substring(0, 50)
-      }, null, 2));
-    }
-    res.json(chats || []);
-  } catch (e) { 
-    console.error('❌ Get admin chats error:', e.message);
-    res.status(500).json([]); 
+    console.log('📋 Admin requested chats list');
+    const chats = await Chat.find().sort({ updatedAt: -1 });
+    console.log(`Found ${chats.length} chats`);
+    res.json(chats);
+  } catch (e) {
+    console.error('Get admin chats error:', e);
+    res.status(500).json([]);
   }
 });
 
-// Admin - Reply to chat
-app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
+// КРИТИЧЕСКИ ВАЖНО: Получение полной истории чата для админа
+app.get('/api/admin/chat/:userId', authenticate, isAdmin, async (req, res) => {
   try {
-    const { userId, text } = req.body || {};
-    if (!userId) return res.status(400).json({ message: 'userId обязателен' });
-    if (!text) return res.status(400).json({ message: 'Текст ответа пуст' });
+    const userId = req.params.userId;
+    console.log(`📥 Admin requesting history for user: ${userId}`);
     
     const chat = await Chat.findOne({ userId });
-    if (!chat) return res.status(404).json({ message: 'Чат не найден' });
     
-    // Remove processing message if exists
+    if (!chat) {
+      console.log('❌ Chat not found');
+      return res.status(404).json({ message: 'Чат не найден' });
+    }
+    
+    console.log(`✅ Found chat with ${chat.messages.length} messages`);
+    res.json(chat);
+  } catch (e) {
+    console.error('Get admin chat history error:', e);
+    res.status(500).json({ message: 'Ошибка получения истории' });
+  }
+});
+
+// Ответ оператора
+app.post('/api/admin/chat/reply', authenticate, isAdmin, async (req, res) => {
+  try {
+    const { userId, text } = req.body;
+    console.log(`📩 Operator reply to ${userId}: ${text}`);
+    
+    let chat = await Chat.findOne({ userId });
+    if (!chat) {
+      return res.status(404).json({ message: 'Чат не найден' });
+    }
+    
+    // Удаляем сообщение "processing" если оно последнее
     if (chat.messages.length > 0 && chat.messages[chat.messages.length - 1].extra?.type === 'processing') {
       chat.messages.pop();
     }
-
-    chat.messages.push({ type: 'bot', text: `[Оператор] ${text}`, time: new Date() });
-    chat.waitingForOperator = false;
-    chat.botStep = 'greet';
-    chat.selectedGirl = null;
-    await chat.save();
-    res.json({ success: true });
-  } catch (e) { 
-    console.error('Admin reply error:', e.message);
-    res.status(500).json({ message: 'Ошибка ответа' }); 
-  }
-});
-
-// Admin - Clear chat history
-app.put('/api/admin/chat/:userId/clear', authenticate, isAdmin, async (req, res) => {
-  try {
-    await Chat.findOneAndUpdate(
-      { userId: req.params.userId }, 
-      { $set: { messages: [], waitingForOperator: false, botStep: 'greet', selectedGirl: null } }
-    );
-    console.log('🗑️ Chat cleared for user:', req.params.userId);
-    res.json({ success: true });
-  } catch (e) { 
-    console.error('Clear chat error:', e.message);
-    res.status(500).json({ message: 'Ошибка очистки' }); 
-  }
-});
-
-// Admin - Complete chat (reset bot, keep history)
-app.put('/api/admin/chat/:userId/complete', authenticate, isAdmin, async (req, res) => {
-  try {
-    const chat = await Chat.findOne({ userId: req.params.userId });
-    if (!chat) return res.status(404).json({ message: 'Чат не найден' });
     
-    // Add system message
     chat.messages.push({
-      type: 'system',
-      text: 'Чат завершен оператором. Начните новый диалог.',
+      type: 'bot', // Отправляем как бот, но с префиксом
+      text: `[Оператор] ${text}`,
       time: new Date()
     });
     
-    await Chat.findOneAndUpdate(
+    chat.waitingForOperator = false;
+    chat.updatedAt = new Date();
+    await chat.save();
+    
+    console.log('✅ Reply saved');
+    res.json({ success: true, messages: chat.messages });
+  } catch (e) {
+    console.error('Operator reply error:', e);
+    res.status(500).json({ message: e.message });
+  }
+});
+
+// Завершить чат (сброс бота, сохранение истории)
+app.put('/api/admin/chat/:userId/complete', authenticate, isAdmin, async (req, res) => {
+  try {
+    const chat = await Chat.findOneAndUpdate(
       { userId: req.params.userId },
       { 
         $set: {
           waitingForOperator: false,
           botStep: 'greet',
           selectedGirl: null,
-          botEnabled: true,
-          messages: chat.messages
+          botEnabled: true
         }
-      }
+      },
+      { new: true }
     );
     
-    console.log('✅ Chat completed for user:', req.params.userId);
+    if (!chat) return res.status(404).json({ message: 'Чат не найден' });
+    
+    chat.messages.push({
+      type: 'system',
+      text: 'Чат завершен оператором. Бот сброшен.',
+      time: new Date()
+    });
+    await chat.save();
+    
+    console.log('✅ Chat completed (bot reset)');
     res.json({ success: true });
-  } catch (e) { 
-    console.error('Complete chat error:', e.message);
-    res.status(500).json({ message: 'Ошибка завершения' }); 
+  } catch (e) {
+    res.status(500).json({ message: e.message });
   }
 });
 
-// Admin - Delete chat
-app.delete('/api/admin/chat/:userId', authenticate, isAdmin, async (req, res) => {
+// Очистить чат (удаление истории)
+app.put('/api/admin/chat/:userId/clear', authenticate, isAdmin, async (req, res) => {
   try {
-    const deleted = await Chat.findOneAndDelete({ userId: req.params.userId });
-    if (!deleted) return res.status(404).json({ message: 'Чат не найден' });
+    await Chat.findOneAndUpdate(
+      { userId: req.params.userId },
+      { $set: { messages: [], waitingForOperator: false, botStep: 'greet', selectedGirl: null } }
+    );
+    console.log('🗑️ Chat cleared');
     res.json({ success: true });
-  } catch (e) { 
-    console.error('Delete chat error:', e.message);
-    res.status(500).json({ message: 'Ошибка удаления' }); 
+  } catch (e) {
+    res.status(500).json({ message: e.message });
   }
 });
 
-// Settings - Get
+// Settings
 app.get('/api/settings', async (req, res) => {
+  const settings = await Settings.find();
+  const obj = {};
+  settings.forEach(s => obj[s.key] = s.value);
+  res.json(obj);
+});
+
+app.post('/api/settings', authenticate, isAdmin, async (req, res) => {
   try {
-    let s = await Settings.findOne().lean();
-    if (!s) {
-      s = await Settings.create({ 
-        mainTitle: 'Анкеты девушек', 
-        mainSubtitle: 'Выберите идеальную компанию', 
-        title: 'BABYGIRL_LNR', 
-        phone: '',
-        globalBotEnabled: true 
-      });
+    for (const [key, value] of Object.entries(req.body)) {
+      await Settings.findOneAndUpdate({ key }, { value }, { upsert: true });
     }
-    res.json(s);
-  } catch (e) { 
-    console.error('Get settings error:', e.message);
-    res.status(500).json({}); 
-  }
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
-// Settings - Update (admin only)
-app.put('/api/settings', authenticate, isAdmin, async (req, res) => {
-  try {
-    const updates = req.body || {};
-    const s = await Settings.findOneAndUpdate({}, updates, { upsert: true, new: true });
-    res.json(s);
-  } catch (e) { 
-    console.error('Update settings error:', e.message);
-    res.status(500).json({ message: 'Ошибка обновления настроек' }); 
-  }
-});
-
-// Serve static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// SPA fallback
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled Error:', err.message);
-  res.status(500).json({ message: 'Внутренняя ошибка сервера' });
-});
-
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Local: http://localhost:${PORT}`);
-  console.log(`🌐 Health: http://localhost:${PORT}/api/health`);
 });
