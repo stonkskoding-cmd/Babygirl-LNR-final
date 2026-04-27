@@ -549,23 +549,36 @@ function renderMessages(messages) {
 function formatBotMessage(msg) {
     let html = (msg.text || '').replace(/\n/g, '<br>');
     if (!msg.extra) return html;
+    
     if (msg.extra.type === 'profile') {
         const g = msg.extra.girl;
-        const mp = (g.photos && g.photos[0]) || '';
-        const imgHtml = mp ? `<img class="msg-profile-img" src="${mp}">` : '<div class="msg-profile-img-placeholder">👩</div>';
-        html += `<div class="msg-profile">${imgHtml}<div class="msg-profile-info"><h4>${g.name} • ${g.city}</h4><div class="price">${g.services.map(s => s.name + ': ' + s.price + '₽').join(', ')}</div><div class="pay-note">💰 Оплата девушке в руки</div></div></div>`;
+        if (g) {
+            const mp = (g.photos && g.photos[0]) || '';
+            const imgHtml = mp ? `<img class="msg-profile-img" src="${mp}">` : '<div class="msg-profile-img-placeholder">👩</div>';
+            html += `<div class="msg-profile">${imgHtml}<div class="msg-profile-info"><h4>${g.name} • ${g.city}</h4><div class="price">${g.services.map(s => s.name + ': ' + s.price + '₽').join(', ')}</div><div class="pay-note">💰 Оплата девушке в руки</div></div></div>`;
+        }
     }
+    
     if (msg.extra.type === 'services') {
         const g = msg.extra.girl;
-        html += '<div class="msg-services">' + g.services.map(s => 
-            `<button class="msg-service-btn" onclick="selectService('${g.name.replace(/'/g, "\\'")}', '${s.name.replace(/'/g, "\\'")}', '${s.price}')">${s.name} — ${s.price}₽</button>`
-        ).join('') + '</div>';
+        if (g && g.services) {
+            html += '<div class="msg-services">' + g.services.map(s => 
+                `<button class="msg-service-btn" onclick="selectService('${g.name.replace(/'/g, "\\'")}', '${s.name.replace(/'/g, "\\'")}', '${s.price}')">${s.name} — ${s.price}₽</button>`
+            ).join('') + '</div>';
+        }
     }
+    
     if (msg.extra.type === 'girls_list') {
-        html += '<div class="msg-services">' + msg.extra.girls.map(g => 
-            `<button class="msg-service-btn" onclick="selectGirlByName('${g.name.replace(/'/g, "\\'")}')">${g.name} — ${g.city}</button>`
-        ).join('') + '</div>';
+        const girls = msg.extra.girls || []; // ✅ Добавлена проверка!
+        if (girls.length > 0) {
+            html += '<div class="msg-services">' + girls.map(g => 
+                `<button class="msg-service-btn" onclick="selectGirlByName('${g.name.replace(/'/g, "\\'")}')">${g.name} — ${g.city}</button>`
+            ).join('') + '</div>';
+        } else {
+            html += '<p style="color: var(--text-muted); margin-top: 10px;">В этом городе пока нет анкет</p>';
+        }
     }
+    
     return html;
 }
 
