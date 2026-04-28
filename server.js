@@ -538,6 +538,23 @@ app.put('/api/admin/chat/:userId/clear', authenticate, isAdmin, async (req, res)
   }
 });
 
+// DELETE - Delete chat completely
+app.delete('/api/admin/chat/:userId', authenticate, isAdmin, async (req, res) => {
+  try {
+    console.log('🗑️ DELETE CHAT - User:', req.user.username, 'Deleting chat for:', req.params.userId);
+    const deleted = await Chat.findOneAndDelete({ userId: req.params.userId });
+    if (!deleted) {
+      console.log('❌ Chat not found:', req.params.userId);
+      return res.status(404).json({ message: 'Чат не найден' });
+    }
+    console.log('✅ Chat deleted:', req.params.userId);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('❌ Delete chat error:', e.message);
+    res.status(500).json({ message: 'Ошибка удаления' });
+  }
+});
+
 app.get('/api/settings', async (req, res) => {
   const settings = await Settings.find();
   const obj = {};
