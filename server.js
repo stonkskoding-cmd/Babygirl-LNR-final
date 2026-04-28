@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');  // ✅ Работает везде
+const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -123,7 +123,7 @@ const isAdmin = (req, res, next) => {
   next();
 };
 
-// 🔧 АВТО-СОЗДАНИЕ АДМИНОВ (после подключения к БД)
+// 🔧 АВТО-СОЗДАНИЕ АДМИНОВ
 async function ensureAdmins() {
   try {
     const adminCount = await User.countDocuments({ role: 'admin' });
@@ -158,14 +158,12 @@ async function ensureAdmins() {
   }
 }
 
-// Запускаем создание админов ПОСЛЕ подключения к MongoDB
 mongoose.connection.once('open', () => {
   console.log('✅ MongoDB connection open');
   ensureAdmins();
 });
 
 // --- ROUTES ---
-
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 app.post('/api/auth/login', async (req, res) => {
@@ -230,7 +228,6 @@ app.post('/api/upload', authenticate, isAdmin, upload.array('photos', 10), (req,
 });
 
 // --- CHAT CLIENT ---
-
 app.get('/api/chat', authenticate, async (req, res) => {
   try {
     let chat = await Chat.findOne({ userId: req.user.username });
@@ -278,92 +275,78 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
     if (!chat.waitingForOperator && chat.botEnabled) {
       const lower = text.toLowerCase();
       
+      // Шаг 1: Выбор города
       if (chat.botStep === 'asking_city' || chat.botStep === 'greet') {
         const cities = ['луганск', 'стаханов', 'первомайск'];
         const city = cities.find(c => lower.includes(c));
+        
         if (city) {
-        if (city) {
-  const girls = await Girl.find({ 
-    city: { $regex: city, $options: 'i' } 
-  });
-  
-  chat.botStep = 'picking_girl';
-  chat.messages.push({
-    type: 'bot',
-    text: `В городе ${city} найдено анкет: ${girls.length}. Выберите девушку:`,
-    extra: { 
-      type: 'girls_list', 
-      girls: girls.map(g => ({
-        name: g.name,
-        city: g.city,
-        age: g.age,
-        photo: g.photos && g.photos[0] ? g.photos[0] : ''
-      }))
-    }
-  });
-}
+          const girls = await Girl.find({ 
+            city: { $regex: city, $options: 'i' } 
+          });
+          
           chat.botStep = 'picking_girl';
           chat.messages.push({
             type: 'bot',
-            text: `В городе ${city} найдено анкет: ${girls.length}. Напишите имя девушки.`,
-            extra: { type: 'girls_list', count: girls.length }
+            text: `В городе ${city} найдено анкет: ${girls.length}. Выберите девушку:`,
+            extra: { 
+              type: 'girls_list', 
+              girls: girls.map(g => ({
+                name: g.name,
+                city: g.city,
+                age: g.age,
+                photo: g.photos && g.photos[0] ? g.photos[0] : ''
+              }))
+            }
           });
         } else {
-          chat.messages.push({ type: 'bot', text: 'Пожалуйста, напишите название города: Луганск, Стаханов или Первомайск.' });
+          chat.messages.push({ 
+            type: 'bot', 
+            text: 'Пожалуйста, напишите название города: Луганск, Стаханов или Первомайск.' 
+          });
         }
       } 
+      // Шаг 2: Выбор девушки
       else if (chat.botStep === 'picking_girl') {
-  const girl = await Girl.findOne({ 
-    name: { $regex: text, $options: 'i' } 
-  });
-  
-  if (girl) {
-    chat.selectedGirl = girl;
-    chat.botStep = 'picking_service';
-    let servicesList = girl.services.map(s => `- ${s.name}: ${s.price}₽`).join('\n');
-    
-    // Отправляем полную анкету
-    chat.messages.push({
-      type: 'bot',
-      text: `Вы выбрали ${girl.name}.\n📍 ${girl.city}\n📏 ${girl.height} см, ⚖️ ${girl.weight} кг\n👙 Грудь: ${girl.breast}\n\n📝 ${girl.desc}\n\nУслуги:\n${servicesList}`,
-      extra: { 
-        type: 'profile', 
-        girl: {
-          name: girl.name,
-          city: girl.city,
-          age: girl.age,
-          height: girl.height,
-          weight: girl.weight,
-          breast: girl.breast,
-          desc: girl.desc,
-          photos: girl.photos,
-          services: girl.services
-        }
-      }
-    });
-  } else {
-    chat.messages.push({ 
-      type: 'bot', 
-      text: 'Девушка не найдена. Попробуйте ввести имя еще раз.' 
-    });
-  }
-}
+        const girl = await Girl.findOne({ 
+          name: { $regex: text, $options: 'i' } 
+        });
+        
         if (girl) {
           chat.selectedGirl = girl;
           chat.botStep = 'picking_service';
           let servicesList = girl.services.map(s => `- ${s.name}: ${s.price}₽`).join('\n');
+          
           chat.messages.push({
             type: 'bot',
-            text: `Вы выбрали ${girl.name}.\nУслуги:\n${servicesList}\n\nНапишите название услуги для заказа.`,
-            extra: { type: 'services', girlId: girl._id }
+            text: `Вы выбрали ${girl.name}.\n📍 ${girl.city}\n📏 ${girl.height} см, ⚖️ ${girl.weight} кг\n👙 Грудь: ${girl.breast}\n\n📝 ${girl.desc}\n\nУслуги:\n${servicesList}`,
+            extra: { 
+              type: 'profile', 
+              girl: {
+                name: girl.name,
+                city: girl.city,
+                age: girl.age,
+                height: girl.height,
+                weight: girl.weight,
+                breast: girl.breast,
+                desc: girl.desc,
+                photos: girl.photos,
+                services: girl.services
+              }
+            }
           });
         } else {
-          chat.messages.push({ type: 'bot', text: 'Девушка не найдена. Попробуйте ввести имя еще раз.' });
+          chat.messages.push({ 
+            type: 'bot', 
+            text: 'Девушка не найдена. Попробуйте ввести имя еще раз.' 
+          });
         }
       }
+      // Шаг 3: Выбор услуги
       else if (chat.botStep === 'picking_service' && chat.selectedGirl) {
-        const serviceName = lower;
-        const service = chat.selectedGirl.services.find(s => s.name.toLowerCase().includes(serviceName));
+        const service = chat.selectedGirl.services.find(s => 
+          s.name.toLowerCase().includes(lower)
+        );
         
         if (service) {
           chat.waitingForOperator = true;
@@ -374,11 +357,18 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
             extra: { type: 'processing' }
           });
         } else {
-          chat.messages.push({ type: 'bot', text: 'Услуга не найдена. Напишите точное название из списка.' });
+          chat.messages.push({ 
+            type: 'bot', 
+            text: 'Услуга не найдена. Напишите точное название из списка.' 
+          });
         }
       }
+      // Шаг 4: Ожидание
       else if (chat.botStep === 'waiting_operator') {
-        chat.messages.push({ type: 'bot', text: 'Заявка уже передана оператору. Пожалуйста, ожидайте.' });
+        chat.messages.push({ 
+          type: 'bot', 
+          text: 'Заявка уже передана оператору. Пожалуйста, ожидайте.' 
+        });
       }
     }
     
@@ -392,7 +382,6 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
 });
 
 // --- ADMIN CHATS ---
-
 app.get('/api/admin/chats', authenticate, isAdmin, async (req, res) => {
   try {
     console.log('📋 Admin requested chats list');
@@ -516,83 +505,7 @@ app.post('/api/settings', authenticate, isAdmin, async (req, res) => {
     res.json({ success: true });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
-// 🔧 TEMP: Сброс паролей админов (УДАЛИТЬ ПОСЛЕ ИСПОЛЬЗОВАНИЯ!)
-app.get('/api/dev/reset-passwords', async (req, res) => {
-  try {
-    console.log('🔧 Resetting admin passwords...');
-    
-    const admins = [
-      { username: 'admin_main', pass: 'Babygirl2024!' },
-      { username: 'operator_01', pass: 'Operator2024!' }
-    ];
-    
-    for (const admin of admins) {
-      const hash = await bcrypt.hash(admin.pass, 10);
-      const result = await User.findOneAndUpdate(
-        { username: admin.username },
-        { password: hash },
-        { new: true }
-      );
-      
-      if (result) {
-        console.log(`✅ Password reset for: ${admin.username} / ${admin.pass}`);
-      } else {
-        console.log(`⚠️  User not found: ${admin.username}`);
-      }
-    }
-    
-    res.json({ 
-      success: true, 
-      message: 'Пароли сброшены! Используй:\nadmin_main / Babygirl2024!\noperator_01 / Operator2024!' 
-    });
-  } catch (e) {
-    console.error('❌ Error:', e);
-    res.status(500).json({ message: e.message });
-  }
-});
-// 🔧 TEMP: Создание/сброс операторов
-app.get('/api/dev/create-operators', async (req, res) => {
-  try {
-    console.log('🔧 Creating operators...');
-    
-    const operators = [
-      { username: 'admin_main', pass: 'Babygirl2024!' },
-      { username: 'operator_01', pass: 'Operator2024!' }
-    ];
-    
-    for (const op of operators) {
-      const hash = await bcrypt.hash(op.pass, 10);
-      
-      // Проверяем существует ли
-      const exists = await User.findOne({ username: op.username });
-      
-      if (exists) {
-        // Обновляем пароль
-        await User.findOneAndUpdate(
-          { username: op.username },
-          { password: hash, role: 'admin' }
-        );
-        console.log(`✅ Updated: ${op.username} / ${op.pass}`);
-      } else {
-        // Создаем нового
-        await User.create({
-          username: op.username,
-          password: hash,
-          role: 'admin'
-        });
-        console.log(`✅ Created: ${op.username} / ${op.pass}`);
-      }
-    }
-    
-    res.json({ 
-      success: true, 
-      message: 'Операторы созданы/обновлены!\nadmin_main / Babygirl2024!\noperator_01 / Operator2024!' 
-    });
-  } catch (e) {
-    console.error('❌ Error:', e);
-    res.status(500).json({ message: e.message });
-  }
-});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
