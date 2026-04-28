@@ -422,9 +422,18 @@ function loadSettings() {
 
 function loadGirls() {
     fetch(`${API_URL}/api/girls`).then(r => r.json()).then(data => {
-        state.girls = data;
+        state.girls = data || [];
+        console.log('✅ Girls loaded:', state.girls.length);
         renderGirls();
         renderCatalogFilters();
+        renderAdminGirls();
+        console.log('✅ Admin girls rendered');
+    }).catch(err => {
+        console.error('❌ Load girls error:', err);
+        state.girls = [];
+        renderGirls();
+        renderCatalogFilters();
+        renderAdminGirls();
     });
 }
 
@@ -604,8 +613,10 @@ window.openAdmin = () => {
     if (state.user.role !== 'admin') return; 
     closeProfileDropdown(); 
     navigateTo('admin'); 
-    loadGirls();
-    loadAdminChats(); 
+    setTimeout(() => {
+        loadGirls();
+        loadAdminChats(); 
+    }, 100);
 };
 
 window.switchAdminTab = (tabId) => {
