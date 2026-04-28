@@ -349,8 +349,7 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
       }
     }
   });
-}
-        } else {
+} else {
           chat.messages.push({ 
             type: 'bot', 
             text: 'Девушка не найдена. Попробуйте ввести имя еще раз.' 
