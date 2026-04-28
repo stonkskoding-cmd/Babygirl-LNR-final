@@ -313,28 +313,43 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
         });
         
         if (girl) {
-          chat.selectedGirl = girl;
-          chat.botStep = 'picking_service';
-          let servicesList = girl.services.map(s => `- ${s.name}: ${s.price}₽`).join('\n');
-          
-          chat.messages.push({
-            type: 'bot',
-            text: `Вы выбрали ${girl.name}.\n📍 ${girl.city}\n📏 ${girl.height} см, ⚖️ ${girl.weight} кг\n👙 Грудь: ${girl.breast}\n\n📝 ${girl.desc}\n\nУслуги:\n${servicesList}`,
-            extra: { 
-              type: 'profile', 
-              girl: {
-                name: girl.name,
-                city: girl.city,
-                age: girl.age,
-                height: girl.height,
-                weight: girl.weight,
-                breast: girl.breast,
-                desc: girl.desc,
-                photos: girl.photos,
-                services: girl.services
-              }
-            }
-          });
+  chat.selectedGirl = girl;
+  chat.botStep = 'picking_service';
+  let servicesList = girl.services.map(s => `- ${s.name}: ${s.price}₽`).join('\n');
+  
+  // 1. Отправляем полную анкету
+  chat.messages.push({
+    type: 'bot',
+    text: `Вы выбрали ${girl.name}.\n📍 ${girl.city}\n📏 ${girl.height} см, ⚖️ ${girl.weight} кг\n👙 Грудь: ${girl.breast}\n\n📝 ${girl.desc}\n\nУслуги:\n${servicesList}`,
+    extra: { 
+      type: 'profile', 
+      girl: {
+        name: girl.name,
+        city: girl.city,
+        age: girl.age,
+        height: girl.height,
+        weight: girl.weight,
+        breast: girl.breast,
+        desc: girl.desc,
+        photos: girl.photos,
+        services: girl.services
+      }
+    }
+  });
+  
+  // 2. Отправляем кнопки услуг
+  chat.messages.push({
+    type: 'bot',
+    text: 'Выберите услугу:',
+    extra: { 
+      type: 'services', 
+      girl: {
+        name: girl.name,
+        services: girl.services
+      }
+    }
+  });
+}
         } else {
           chat.messages.push({ 
             type: 'bot', 
