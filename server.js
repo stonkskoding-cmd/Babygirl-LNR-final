@@ -562,7 +562,7 @@ app.get('/api/settings', async (req, res) => {
   res.json(obj);
 });
 
-app.post('/api/settings', authenticate, isAdmin, async (req, res) => {
+app.put('/api/settings', authenticate, isAdmin, async (req, res) => {
   try {
     console.log('💾 SAVE SETTINGS - User:', req.user.username, 'Data:', req.body);
     const updates = req.body || {};
