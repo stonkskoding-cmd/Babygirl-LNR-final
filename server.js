@@ -564,11 +564,18 @@ app.get('/api/settings', async (req, res) => {
 
 app.post('/api/settings', authenticate, isAdmin, async (req, res) => {
   try {
-    for (const [key, value] of Object.entries(req.body)) {
+    console.log('💾 SAVE SETTINGS - User:', req.user.username, 'Data:', req.body);
+    const updates = req.body || {};
+    // Сохраняем каждое поле как отдельный key-value
+    for (const [key, value] of Object.entries(updates)) {
       await Settings.findOneAndUpdate({ key }, { value }, { upsert: true });
     }
+    console.log('✅ Settings saved');
     res.json({ success: true });
-  } catch (e) { res.status(500).json({ message: e.message }); }
+  } catch (e) {
+    console.error('❌ Update settings error:', e.message);
+    res.status(500).json({ message: 'Ошибка обновления настроек' });
+  }
 });
 
 // Start Server
