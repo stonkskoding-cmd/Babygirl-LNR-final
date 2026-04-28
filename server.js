@@ -391,7 +391,7 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
         }
       }
       // Шаг 3: Выбор услуги
-      else if (chat.botStep === 'picking_service' && chat.selectedGirl) {
+      else if (chat.botStep === 'girl_selected' && chat.selectedGirl) {
         const services = chat.selectedGirl.services || [];
         const service = services.find(s => lower.includes((s.name || '').toLowerCase()));
         
