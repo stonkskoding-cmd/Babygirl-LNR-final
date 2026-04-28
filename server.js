@@ -261,6 +261,40 @@ app.get('/api/chat', authenticate, async (req, res) => {
   }
 });
 
+// Chat - Init with girl
+app.post('/api/chat/init', authenticate, async (req, res) => {
+  try {
+    const { girlId } = req.body || {};
+    if (!girlId) return res.status(400).json({ message: 'girlId обязателен' });
+    const girl = await Girl.findById(girlId);
+    if (!girl) return res.status(404).json({ message: 'Девушка не найдена' });
+    let chat = await Chat.findOne({ userId: req.user.username });
+    if (!chat) {
+      chat = await Chat.create({
+        userId: req.user.username,
+        messages: [],
+        botStep: 'greet',
+        waitingForOperator: false,
+        selectedGirl: null
+      });
+    }
+    chat.messages = [];
+    chat.botStep = 'girl_selected';
+    chat.selectedGirl = girl;
+    chat.waitingForOperator = false;
+    chat.messages.push(
+      { type: 'bot', text: 'Здравствуйте! 👋 Вы выбрали:', time: new Date() },
+      { type: 'bot', text: '', extra: { type: 'profile', girl }, time: new Date() },
+      { type: 'bot', text: '💰 Оплата девушке в руки. Выберите услугу:', extra: { type: 'services', girl }, time: new Date() }
+    );
+    await chat.save();
+    res.json({ messages: chat.messages });
+  } catch (e) {
+    console.error('Chat init error:', e.message);
+    res.status(500).json({ message: 'Ошибка инициализации чата' });
+  }
+});
+
 app.post('/api/chat/send', authenticate, async (req, res) => {
   try {
     const { text } = req.body;
