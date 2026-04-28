@@ -358,22 +358,22 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
       }
       // Шаг 3: Выбор услуги
       else if (chat.botStep === 'picking_service' && chat.selectedGirl) {
-        const service = chat.selectedGirl.services.find(s => 
-          s.name.toLowerCase().includes(lower)
-        );
+        const services = chat.selectedGirl.services || [];
+        const service = services.find(s => lower.includes((s.name || '').toLowerCase()));
         
         if (service) {
           chat.waitingForOperator = true;
           chat.botStep = 'waiting_operator';
           chat.messages.push({
             type: 'bot',
-            text: `✅ Заказ оформлен: ${service.name} (${service.price}₽).\nОжидайте подтверждения оператора.`,
+            text: `✅ Вы выбрали: ${service.name} — ${service.price}₽\nЗаявка в обработке.`,
             extra: { type: 'processing' }
           });
         } else {
           chat.messages.push({ 
             type: 'bot', 
-            text: 'Услуга не найдена. Напишите точное название из списка.' 
+            text: 'Напишите название услуги (например: час).',
+            extra: { type: 'text' } 
           });
         }
       }
