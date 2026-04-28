@@ -513,7 +513,7 @@ app.put('/api/admin/chat/:userId/complete', authenticate, isAdmin, async (req, r
     
     chat.messages.push({
       type: 'system',
-      text: 'Чат завершен оператором. Бот сброшен.',
+      text: 'Спасибо за заказ, приходите ещё! 💕',
       time: new Date()
     });
     await chat.save();
