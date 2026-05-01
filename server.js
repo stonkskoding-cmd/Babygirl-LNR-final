@@ -319,7 +319,7 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
       
       // Шаг 1: Выбор города
       if (chat.botStep === 'asking_city' || chat.botStep === 'greet') {
-        const cities = ['луганск', 'стаханов', 'первомайск'];
+        const cities = ['луганск', 'стаханов', 'первомайск', 'мариуполь'];
         const city = cities.find(c => lower.includes(c));
         
         if (city) {
