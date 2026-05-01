@@ -284,28 +284,116 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
     .profile-modal-img,.profile-modal-img-placeholder{height:250px !important}
 }
 
-/* Галерея фото в профиле */
-.profile-photo-gallery {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    padding: 10px;
+/* Слайдер фото в профиле */
+.profile-photo-slider {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
     background: rgba(0,0,0,0.3);
     border-radius: 10px;
     margin-bottom: 15px;
 }
 
-.gallery-photo {
+.slider-container {
     width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
 }
 
-.gallery-photo:hover {
-    transform: scale(1.05);
+.slider-track {
+    display: flex;
+    transition: transform 0.3s ease;
+    height: 100%;
+}
+
+.slider-slide {
+    min-width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slider-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+/* Стрелки навигации */
+.slider-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    font-size: 2rem;
+    padding: 15px 20px;
+    cursor: pointer;
+    z-index: 10;
+    border-radius: 50%;
+    transition: all 0.3s;
+    user-select: none;
+}
+
+.slider-arrow:hover {
+    background: rgba(233, 30, 99, 0.8);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.slider-arrow.prev { left: 15px; }
+.slider-arrow.next { right: 15px; }
+
+/* Индикаторы слайдов */
+.slider-dots {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.slider-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.slider-dot.active {
+    background: #e91e63;
+    transform: scale(1.3);
+}
+
+/* Адаптив для мобильных */
+@media (max-width: 768px) {
+    .profile-photo-slider {
+        height: 350px;
+    }
+    .slider-arrow {
+        padding: 10px 15px;
+        font-size: 1.5rem;
+    }
+    .slider-arrow.prev { left: 10px; }
+    .slider-arrow.next { right: 10px; }
+}
+
+@media (max-width: 480px) {
+    .profile-photo-slider {
+        height: 300px;
+    }
+    .slider-arrow {
+        padding: 8px 12px;
+        font-size: 1.2rem;
+    }
 }
 
 /* Полноразмерное фото (модалка) */
@@ -991,30 +1079,45 @@ function createGirlCard(g) {
         <div class="girl-card-actions"><button class="btn-open" onclick="event.stopPropagation();openProfile('${g._id}')">Открыть анкету</button><button class="btn-order" onclick="event.stopPropagation();orderGirl('${g._id}')">Заказать</button></div>
     </div></div>`;
 }
+// Глобальная переменная для хранения интервала слайдера
+let sliderInterval = null;
+
 function openProfile(id) {
     const g = state.girls.find(x => x._id == id); if (!g) return;
     
-    // Главное фото (первое)
-    const mainPhoto = (g.photos && g.photos[0]) || '';
-    const mainPhotoHtml = mainPhoto 
-        ? `<img class="profile-modal-img" src="${mainPhoto}" alt="${g.name}" onclick="showFullSize(this)">` 
-        : '<div class="profile-modal-img-placeholder">👩</div>';
-    
-    // Галерея всех остальных фото (если их больше 1)
-    let galleryHtml = '';
-    if (g.photos && g.photos.length > 1) {
-        galleryHtml = '<div class="profile-photo-gallery">' + 
-            g.photos.slice(1).map(photo => 
-                `<img src="${photo}" class="gallery-photo" onclick="showFullSize(this)" alt="Photo">`
-            ).join('') + 
-        '</div>';
+    // Слайдер для всех фото (если есть фото)
+    let sliderHtml = '';
+    if (g.photos && g.photos.length > 0) {
+        sliderHtml = `
+            <div class="profile-photo-slider" id="profileSlider">
+                <div class="slider-container">
+                    <div class="slider-track" id="sliderTrack">
+                        ${g.photos.map((photo, idx) => 
+                            `<div class="slider-slide">
+                                <img src="${photo}" alt="${g.name} - фото ${idx + 1}" onclick="showFullSize(this)">
+                            </div>`
+                        ).join('')}
+                    </div>
+                </div>
+                ${g.photos.length > 1 ? `
+                    <button class="slider-arrow prev" onclick="slidePrev()">❮</button>
+                    <button class="slider-arrow next" onclick="slideNext()">❯</button>
+                    <div class="slider-dots" id="sliderDots">
+                        ${g.photos.map((_, idx) => 
+                            `<div class="slider-dot ${idx === 0 ? 'active' : ''}" onclick="goToSlide(${idx})"></div>`
+                        ).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    } else {
+        sliderHtml = '<div class="profile-modal-img-placeholder">👩</div>';
     }
     
     const sH = (g.services || []).map(s => `<div class="profile-service"><span class="name">${s.name}</span><span class="price">${s.price}₽</span></div>`).join('');
     
     document.getElementById('profileContent').innerHTML = `
-        ${mainPhotoHtml}
-        ${galleryHtml}
+        ${sliderHtml}
         <div class="profile-detail">
             <h2>${g.name}</h2>
             <div class="city">📍 ${g.city}</div>
@@ -1034,8 +1137,96 @@ function openProfile(id) {
             <button class="profile-order-btn" onclick="orderGirl('${g._id}');closeProfileModal()">Заказать</button>
         </div>
     `;
+    
+    // Инициализация слайдера если фото больше одного
+    if (g.photos && g.photos.length > 1) {
+        initSlider(g.photos.length);
+    }
+    
     document.getElementById('profileModal').classList.add('show');
 }
+
+// Инициализация слайдера
+function initSlider(slideCount) {
+    let currentSlide = 0;
+    const track = document.getElementById('sliderTrack');
+    const dots = document.querySelectorAll('.slider-dot');
+    const sliderContainer = document.querySelector('.profile-photo-slider');
+    
+    // Функция переключения слайда
+    function updateSlide() {
+        if (!track) return;
+        track.style.transform = `translateX(-${currentSlide * 100}%)`;
+        dots.forEach((dot, idx) => {
+            dot.classList.toggle('active', idx === currentSlide);
+        });
+    }
+    
+    // Автопереключение каждые 3 секунды
+    sliderInterval = setInterval(() => {
+        currentSlide = (currentSlide + 1) % slideCount;
+        updateSlide();
+    }, 3000);
+    
+    // Пауза при наведении
+    if (sliderContainer) {
+        sliderContainer.addEventListener('mouseenter', () => {
+            if (sliderInterval) clearInterval(sliderInterval);
+        });
+        sliderContainer.addEventListener('mouseleave', () => {
+            sliderInterval = setInterval(() => {
+                currentSlide = (currentSlide + 1) % slideCount;
+                updateSlide();
+            }, 3000);
+        });
+    }
+    
+    // Сохраняем текущий слайд в глобальной переменной для ручного управления
+    window.currentSlide = currentSlide;
+    window.slideCount = slideCount;
+}
+
+// Переключение на предыдущий слайд
+window.slidePrev = function() {
+    if (sliderInterval) clearInterval(sliderInterval);
+    window.currentSlide = (window.currentSlide - 1 + window.slideCount) % window.slideCount;
+    updateSliderPosition();
+};
+
+// Переключение на следующий слайд
+window.slideNext = function() {
+    if (sliderInterval) clearInterval(sliderInterval);
+    window.currentSlide = (window.currentSlide + 1) % window.slideCount;
+    updateSliderPosition();
+};
+
+// Переход к конкретному слайду
+window.goToSlide = function(idx) {
+    if (sliderInterval) clearInterval(sliderInterval);
+    window.currentSlide = idx;
+    updateSliderPosition();
+};
+
+// Обновление позиции слайдера
+function updateSliderPosition() {
+    const track = document.getElementById('sliderTrack');
+    const dots = document.querySelectorAll('.slider-dot');
+    if (!track) return;
+    track.style.transform = `translateX(-${window.currentSlide * 100}%)`;
+    dots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx === window.currentSlide);
+    });
+}
+
+// Закрытие модалки с очисткой интервала
+const originalCloseProfileModal = window.closeProfileModal;
+window.closeProfileModal = function() {
+    if (sliderInterval) {
+        clearInterval(sliderInterval);
+        sliderInterval = null;
+    }
+    originalCloseProfileModal();
+};
 
 // Показать фото на весь экран
 window.showFullSize = function(imgElement) {

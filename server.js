@@ -43,7 +43,7 @@ const GirlSchema = new mongoose.Schema({
   breast: String,
   desc: String,
   prefs: String,
-  photos: [String],
+  photos: { type: [String], max: 10 },
   services: [{ name: String, price: Number }],
   createdAt: { type: Date, default: Date.now }
 });
@@ -214,6 +214,15 @@ app.get('/api/girls', async (req, res) => {
 app.post('/api/girls', authenticate, isAdmin, async (req, res) => {
   try {
     const { action, girl } = req.body;
+    // Валидация массива фото: преобразуем строку в массив и ограничиваем до 10
+    if (girl && girl.photos) {
+      if (typeof girl.photos === 'string') {
+        girl.photos = [girl.photos];
+      }
+      if (Array.isArray(girl.photos)) {
+        girl.photos = girl.photos.slice(0, 10); // Ограничиваем до 10 фото
+      }
+    }
     if (action === 'add') {
       const newGirl = await Girl.create(girl);
       return res.json(newGirl);
