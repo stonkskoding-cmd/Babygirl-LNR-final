@@ -8,9 +8,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const app = express();
-
 // --- КОНФИГУРАЦИЯ ---
+const { CITIES } = require('./config/cities');
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI;
 const JWT_SECRET = process.env.JWT_SECRET || 'babygirl_secret_key_change_in_prod_123';
@@ -19,6 +18,8 @@ if (!MONGODB_URI) {
   console.error('❌ ОШИБКА: MONGODB_URI не задан в переменных окружения!');
   process.exit(1);
 }
+
+const app = express();
 
 // --- СОЕДИНЕНИЕ С БД ---
 mongoose.connect(MONGODB_URI)
@@ -245,7 +246,7 @@ app.get('/api/chat', authenticate, async (req, res) => {
         userId: req.user.username,
         messages: [{
           type: 'bot',
-          text: 'Здравствуйте! 👋 Добро пожаловать в BABYGIRL_LNR!\nНапишите ваш город (Луганск, Стаханов или Первомайск)',
+          text: `Здравствуйте! 👋 Добро пожаловать в BABYGIRL_LNR!\nНапишите ваш город (${CITIES.join(', ')})`,
           time: new Date()
         }],
         botStep: 'asking_city',
@@ -255,7 +256,7 @@ app.get('/api/chat', authenticate, async (req, res) => {
     } else if (chat.messages.length === 0) {
        chat.messages.push({
           type: 'bot',
-          text: 'Здравствуйте! 👋 Напишите ваш город (Луганск, Стаханов или Первомайск)',
+          text: `Здравствуйте! 👋 Напишите ваш город (${CITIES.join(', ')})`,
           time: new Date()
        });
        chat.botStep = 'asking_city';
@@ -344,7 +345,7 @@ app.post('/api/chat/send', authenticate, async (req, res) => {
         } else {
           chat.messages.push({ 
             type: 'bot', 
-            text: 'Пожалуйста, напишите название города: Луганск, Стаханов или Первомайск.' 
+            text: `Пожалуйста, напишите название города: ${CITIES.join(', ')}.` 
           });
         }
       } 
