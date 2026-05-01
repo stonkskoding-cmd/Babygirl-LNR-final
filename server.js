@@ -70,6 +70,14 @@ const SettingsSchema = new mongoose.Schema({
 });
 const Settings = mongoose.model('Settings', SettingsSchema);
 
+const NewsSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  content: { type: String, required: true },
+  isActive: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+});
+const News = mongoose.model('News', NewsSchema);
+
 // --- MIDDLEWARE ---
 app.use(cors({
   origin: true,
@@ -566,7 +574,6 @@ app.put('/api/settings', authenticate, isAdmin, async (req, res) => {
   try {
     console.log('💾 SAVE SETTINGS - User:', req.user.username, 'Data:', req.body);
     const updates = req.body || {};
-    // Сохраняем каждое поле как отдельный key-value
     for (const [key, value] of Object.entries(updates)) {
       await Settings.findOneAndUpdate({ key }, { value }, { upsert: true });
     }
@@ -575,6 +582,49 @@ app.put('/api/settings', authenticate, isAdmin, async (req, res) => {
   } catch (e) {
     console.error('❌ Update settings error:', e.message);
     res.status(500).json({ message: 'Ошибка обновления настроек' });
+  }
+});
+
+// --- NEWS ROUTES ---
+app.get('/api/news', async (req, res) => {
+  try {
+    const news = await News.find({ isActive: true }).sort({ createdAt: -1 }).lean();
+    res.json(news || []);
+  } catch (e) {
+    console.error('Get news error:', e.message);
+    res.status(500).json([]);
+  }
+});
+
+app.post('/api/news', authenticate, isAdmin, async (req, res) => {
+  try {
+    console.log('📰 CREATE NEWS - User:', req.user.username, 'Data:', req.body);
+    const { title, content } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ message: 'Заголовок и текст обязательны' });
+    }
+    const news = await News.create({ title, content, isActive: true });
+    console.log('✅ News created:', news._id);
+    res.json(news);
+  } catch (e) {
+    console.error('❌ Create news error:', e.message);
+    res.status(500).json({ message: 'Ошибка создания новости' });
+  }
+});
+
+app.delete('/api/news/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    console.log('🗑️ DELETE NEWS - User:', req.user.username, 'ID:', req.params.id);
+    const deleted = await News.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      console.log('❌ News not found:', req.params.id);
+      return res.status(404).json({ message: 'Новость не найдена' });
+    }
+    console.log('✅ News deleted:', req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('❌ Delete news error:', e.message);
+    res.status(500).json({ message: 'Ошибка удаления новости' });
   }
 });
 

@@ -45,6 +45,13 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 .catalog-header{text-align:center;margin-bottom:30px}
 .catalog-header h1{font-size:2.2rem;font-weight:900;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;text-shadow:0 0 30px rgba(233,30,99,0.2)}
 .catalog-header p{color:var(--text-muted);font-size:0.95rem}
+
+/* News Banner */
+.news-banner{background:rgba(233,30,99,0.1);border:1px solid rgba(233,30,99,0.3);border-radius:16px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden}
+.news-banner::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,rgba(233,30,99,0.1),rgba(156,39,176,0.1));z-index:0}
+.news-item{position:relative;z-index:1}
+.news-item .news-title{font-size:1.3rem;font-weight:800;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px;text-shadow:0 0 20px rgba(233,30,99,0.2)}
+.news-item .news-content{color:rgba(255,255,255,0.85);font-size:0.95rem;line-height:1.5}
 .catalog-filters{display:flex;gap:10px;justify-content:center;margin-bottom:25px;flex-wrap:wrap}
 .filter-btn{background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);color:var(--text-muted);padding:8px 18px;border-radius:20px;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:600;transition:all 0.3s;backdrop-filter:blur(5px)}
 .filter-btn:hover{border-color:var(--accent);color:var(--text)}
@@ -363,6 +370,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
 <header class="header" id="header"><div class="header-logo" onclick="navigateTo('girls')"><div class="logo-heart"><svg viewBox="0 0 40 40" fill="none"><path d="M20 35C10 28 2 22 2 14C2 8 7 3 13 3C16 3 18.5 4.5 20 7C21.5 4.5 24 3 27 3C33 3 38 8 38 14C38 22 30 28 20 35Z" stroke="url(#hg)" stroke-width="2" fill="none"><animate attributeName="stroke-dashoffset" from="100" to="0" dur="2s" fill="freeze"/><animate attributeName="stroke-dasharray" from="0 100" to="100 0" dur="2s" fill="freeze"/></path><defs><linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#e91e63"/><stop offset="100%" stop-color="#9c27b0"/></linearGradient></defs></svg></div><span class="logo-text">BABYGIRL_LNR</span></div><div class="header-center"><nav class="header-nav"><button class="nav-btn active" data-section="girls" onclick="navigateTo('girls')">👩 Девушки</button><button class="nav-btn" data-section="chat" onclick="navigateTo('chat')">💬 Чат</button><button class="nav-btn" data-section="cities" onclick="openCitiesModal()">🏙️ Города</button></nav></div><div class="header-right"><button class="header-profile-btn" onclick="toggleProfileDropdown()">👤<span id="notificationBadge" style="display:none" class="notification-badge">0</span></button></div></header>
 <main class="main">
 <section class="section active" id="sec-girls">
+  <div id="newsContainer" class="news-banner" style="display: none;"></div>
   <div class="catalog-header"><h1 id="mainHeaderTitle">Анкеты девушек</h1><p id="mainHeaderSubtitle">Выберите идеальную компанию для незабываемого вечера</p></div>
   <div id="catalogPhone" style="margin-bottom: 20px; text-align: center; display: none;">
     <a href="#" id="catalogPhoneLink" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 20px; color: #ff6090; text-decoration: none; font-weight: 700; font-size: 1.1rem; transition: all 0.3s; display: inline-flex; align-items: center; gap: 8px;">📞 +7 XXX XXX-XX-XX</a>
@@ -371,7 +379,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--bg-primary);color:var(
   <div class="girls-grid" id="girlsGrid"></div>
 </section>
 <section class="section" id="sec-chat"><div class="chat-container"><div class="chat-header"><h3>💬 Чат с оператором</h3><div class="chat-indicator" id="chatIndicator"><span class="dot"></span><span>Ожидание оператора...</span></div></div><div class="chat-messages" id="chatMessages"></div><div class="chat-input-wrap"><input type="text" class="chat-input" id="chatInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter')sendMessage()"><button class="chat-send" onclick="sendMessage()">➤</button></div></div></section>
-<section class="section" id="sec-admin"><div class="catalog-header"><h1>Панель управления</h1><p>Управление контентом и чатами</p></div><div class="admin-tabs"><button class="admin-tab active" onclick="switchAdminTab('girls-tab')">👩 Анкеты</button><button class="admin-tab" onclick="switchAdminTab('chats-tab')">💬 Чаты<span id="chatsBadge" class="badge" style="display:none">0</span></button><button class="admin-tab" onclick="switchAdminTab('settings-tab')">⚙️ Настройки</button></div><div class="admin-panel active" id="girls-tab"><div class="admin-section"><h3>➕ Добавить / Редактировать анкету</h3><div class="admin-card"><input type="hidden" id="editGirlId" value=""><div class="admin-row"><div class="form-group"><label>Имя *</label><input type="text" class="form-input" id="admGirlName" placeholder="Имя девушки"></div><div class="form-group"><label>Город</label><select class="form-input" id="admGirlCity"><option value="Луганск">Луганск</option><option value="Стаханов">Стаханов</option><option value="Первомайск">Первомайск</option></select></div></div><div class="admin-row"><div class="form-group"><label>Рост (см)</label><input type="number" class="form-input" id="admGirlHeight" placeholder="170"></div><div class="form-group"><label>Вес (кг)</label><input type="number" class="form-input" id="admGirlWeight" placeholder="55"></div><div class="form-group"><label>Размер груди</label><input type="text" class="form-input" id="admGirlBreast" placeholder="3"></div><div class="form-group"><label>Возраст</label><input type="number" class="form-input" id="admGirlAge" placeholder="22"></div></div><div class="form-group"><label>Описание</label><textarea class="form-input" id="admGirlDesc" rows="3" placeholder="Описание девушки..."></textarea></div><div class="form-group"><label>Предпочтения</label><input type="text" class="form-input" id="admGirlPrefs" placeholder="Предпочтения..."></div><div class="form-group"><label>Фото (до 4 шт)</label><div class="photo-upload-area" id="photoUploadArea"><div class="photo-slot" onclick="uploadPhoto(0)"><span class="placeholder">📷<br>1</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(0,this)"></div><div class="photo-slot" onclick="uploadPhoto(1)"><span class="placeholder">📷<br>2</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(1,this)"></div><div class="photo-slot" onclick="uploadPhoto(2)"><span class="placeholder">📷<br>3</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(2,this)"></div><div class="photo-slot" onclick="uploadPhoto(3)"><span class="placeholder">📷<br>4</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(3,this)"></div></div></div><div class="form-group"><label>Услуги</label><div class="services-list" id="servicesList"></div><button class="admin-btn secondary" onclick="addServiceRow()" style="margin-top:8px">➕ Добавить услугу</button></div><div class="admin-row" style="margin-top:16px"><button class="admin-btn primary" onclick="saveGirl()">💾 Сохранить анкету</button><button class="admin-btn secondary" onclick="clearGirlForm()">🗑️ Очистить</button></div></div><h3 style="margin-top:20px">📋 Список анкет</h3><div class="admin-list" id="adminGirlsList"></div></div></div><div class="admin-panel" id="chats-tab"><div class="admin-section"><h3>💬 Активные чаты с клиентами</h3><div class="chat-list" id="adminChatList"></div></div></div><div class="admin-panel" id="settings-tab"><div class="admin-section"><h3>⚙️ Настройки сайта</h3><div class="admin-card"><div class="form-group"><label>Заголовок главной страницы</label><input type="text" class="form-input" id="admMainTitle" value="Анкеты девушек"></div><div class="form-group"><label>Описание главной страницы</label><input type="text" class="form-input" id="admMainSubtitle" value="Выберите идеальную компанию для незабываемого вечера"></div><div class="form-group"><label>Название вкладки браузера</label><input type="text" class="form-input" id="admSiteTitle" value="BABYGIRL_LNR"></div><div class="form-group"><label>Описание сайта (SEO)</label><textarea class="form-input" id="admSiteDesc" rows="2" placeholder="Краткое описание..."></textarea></div><div class="form-group"><label>Номер телефона (шапка)</label><input type="text" class="form-input" id="admSitePhone" placeholder="+7 XXX XXX-XX-XX"></div><div class="admin-row" style="margin-top:12px"><button class="admin-btn primary" onclick="saveSiteSettings()">💾 Сохранить настройки</button></div></div></div></div></section>
+<section class="section" id="sec-admin"><div class="catalog-header"><h1>Панель управления</h1><p>Управление контентом и чатами</p></div><div class="admin-tabs"><button class="admin-tab active" onclick="switchAdminTab('girls-tab')">👩 Анкеты</button><button class="admin-tab" onclick="switchAdminTab('chats-tab')">💬 Чаты<span id="chatsBadge" class="badge" style="display:none">0</span></button><button class="admin-tab" onclick="switchAdminTab('settings-tab')">⚙️ Настройки</button><button class="admin-tab" onclick="switchAdminTab('news-tab')">📰 Новости</button></div><div class="admin-panel active" id="girls-tab"><div class="admin-section"><h3>➕ Добавить / Редактировать анкету</h3><div class="admin-card"><input type="hidden" id="editGirlId" value=""><div class="admin-row"><div class="form-group"><label>Имя *</label><input type="text" class="form-input" id="admGirlName" placeholder="Имя девушки"></div><div class="form-group"><label>Город</label><select class="form-input" id="admGirlCity"><option value="Луганск">Луганск</option><option value="Стаханов">Стаханов</option><option value="Первомайск">Первомайск</option></select></div></div><div class="admin-row"><div class="form-group"><label>Рост (см)</label><input type="number" class="form-input" id="admGirlHeight" placeholder="170"></div><div class="form-group"><label>Вес (кг)</label><input type="number" class="form-input" id="admGirlWeight" placeholder="55"></div><div class="form-group"><label>Размер груди</label><input type="text" class="form-input" id="admGirlBreast" placeholder="3"></div><div class="form-group"><label>Возраст</label><input type="number" class="form-input" id="admGirlAge" placeholder="22"></div></div><div class="form-group"><label>Описание</label><textarea class="form-input" id="admGirlDesc" rows="3" placeholder="Описание девушки..."></textarea></div><div class="form-group"><label>Предпочтения</label><input type="text" class="form-input" id="admGirlPrefs" placeholder="Предпочтения..."></div><div class="form-group"><label>Фото (до 4 шт)</label><div class="photo-upload-area" id="photoUploadArea"><div class="photo-slot" onclick="uploadPhoto(0)"><span class="placeholder">📷<br>1</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(0,this)"></div><div class="photo-slot" onclick="uploadPhoto(1)"><span class="placeholder">📷<br>2</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(1,this)"></div><div class="photo-slot" onclick="uploadPhoto(2)"><span class="placeholder">📷<br>3</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(2,this)"></div><div class="photo-slot" onclick="uploadPhoto(3)"><span class="placeholder">📷<br>4</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(3,this)"></div></div></div><div class="form-group"><label>Услуги</label><div class="services-list" id="servicesList"></div><button class="admin-btn secondary" onclick="addServiceRow()" style="margin-top:8px">➕ Добавить услугу</button></div><div class="admin-row" style="margin-top:16px"><button class="admin-btn primary" onclick="saveGirl()">💾 Сохранить анкету</button><button class="admin-btn secondary" onclick="clearGirlForm()">🗑️ Очистить</button></div></div><h3 style="margin-top:20px">📋 Список анкет</h3><div class="admin-list" id="adminGirlsList"></div></div></div><div class="admin-panel" id="chats-tab"><div class="admin-section"><h3>💬 Активные чаты с клиентами</h3><div class="chat-list" id="adminChatList"></div></div></div><div class="admin-panel" id="settings-tab"><div class="admin-section"><h3>⚙️ Настройки сайта</h3><div class="admin-card"><div class="form-group"><label>Заголовок главной страницы</label><input type="text" class="form-input" id="admMainTitle" value="Анкеты девушек"></div><div class="form-group"><label>Описание главной страницы</label><input type="text" class="form-input" id="admMainSubtitle" value="Выберите идеальную компанию для незабываемого вечера"></div><div class="form-group"><label>Название вкладки браузера</label><input type="text" class="form-input" id="admSiteTitle" value="BABYGIRL_LNR"></div><div class="form-group"><label>Описание сайта (SEO)</label><textarea class="form-input" id="admSiteDesc" rows="2" placeholder="Краткое описание..."></textarea></div><div class="form-group"><label>Номер телефона (шапка)</label><input type="text" class="form-input" id="admSitePhone" placeholder="+7 XXX XXX-XX-XX"></div><div class="admin-row" style="margin-top:12px"><button class="admin-btn primary" onclick="saveSiteSettings()">💾 Сохранить настройки</button></div></div></div></div><div class="admin-panel" id="news-tab"><div class="admin-section"><h3>📰 Управление новостями</h3><div class="admin-card"><div class="form-group"><label>Заголовок новости *</label><input type="text" class="form-input" id="admNewsTitle" placeholder="Введите заголовок новости"></div><div class="form-group"><label>Текст новости *</label><textarea class="form-input" id="admNewsContent" rows="4" placeholder="Введите текст новости..."></textarea></div><div class="admin-row" style="margin-top:12px"><button class="admin-btn primary" onclick="addNews()">➕ Добавить новость</button></div></div><h3 style="margin-top:20px">📋 Список новостей</h3><div class="admin-list" id="adminNewsList"></div></div></div></section>
 </main>
 <footer class="footer"><div class="warning">⚠️ Данный сайт содержит материалы 18+. Доступ разрешён только лицам старше 18 лет.</div><div class="info">BABYGIRL_LNR — сервис знакомств. Все услуги предоставляются по взаимному согласию. Оплата производится напрямую девушке при встрече. Администрация не несёт ответственности за действия пользователей.</div></footer>
 </div>
@@ -406,9 +414,84 @@ async function apiCall(endpoint, options = {}) {
 async function init() {
     document.getElementById('ageModal').classList.add('show');
     if (state.user) updateUIForLoggedUser();
+    loadNews();
     loadGirls();
     loadSettings();
     window.addEventListener('scroll', () => document.getElementById('header').classList.toggle('scrolled', window.scrollY > 20));
+}
+
+function loadNews() {
+    fetch(`${API_URL}/api/news`).then(r => r.json()).then(news => {
+        const container = document.getElementById('newsContainer');
+        if (!container) return;
+        if (!news || news.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+        // Показываем только последнюю новость
+        const latest = news[0];
+        container.innerHTML = `<div class="news-item"><div class="news-title">${escapeHtml(latest.title)}</div><div class="news-content">${escapeHtml(latest.content)}</div></div>`;
+        container.style.display = 'block';
+    }).catch(err => {
+        console.error('Load news error:', err);
+        document.getElementById('newsContainer').style.display = 'none';
+    });
+}
+
+function loadAdminNews() {
+    fetch(`${API_URL}/api/news`).then(r => r.json()).then(news => {
+        const list = document.getElementById('adminNewsList');
+        if (!list) return;
+        if (!news || news.length === 0) {
+            list.innerHTML = '<div class="empty-state"><p>Новостей нет</p></div>';
+            return;
+        }
+        list.innerHTML = news.map(n => `
+            <div class="admin-list-item">
+                <div class="item-info">
+                    <strong>${escapeHtml(n.title)}</strong>
+                    <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">${new Date(n.createdAt).toLocaleDateString('ru-RU')}</div>
+                </div>
+                <div class="item-actions">
+                    <button class="admin-btn danger" onclick="deleteNews('${n._id}')">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+    }).catch(err => {
+        console.error('Load admin news error:', err);
+    });
+}
+
+function addNews() {
+    const title = document.getElementById('admNewsTitle').value.trim();
+    const content = document.getElementById('admNewsContent').value.trim();
+    if (!title || !content) return showToast('Заполните заголовок и текст', 'error');
+    apiCall('/api/news', { method: 'POST', body: JSON.stringify({ title, content }) })
+        .then(() => {
+            showToast('Новость добавлена', 'success');
+            document.getElementById('admNewsTitle').value = '';
+            document.getElementById('admNewsContent').value = '';
+            loadAdminNews();
+            loadNews();
+        })
+        .catch(e => showToast('Ошибка', 'error'));
+}
+
+window.deleteNews = (id) => {
+    if (!confirm('Удалить новость?')) return;
+    apiCall(`/api/news/${id}`, { method: 'DELETE' })
+        .then(() => {
+            showToast('Новость удалена', 'success');
+            loadAdminNews();
+            loadNews();
+        })
+        .catch(e => showToast('Ошибка', 'error'));
+};
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function loadSettings() {
@@ -639,6 +722,8 @@ window.switchAdminTab = (tabId) => {
         loadGirls();
     } else if (tabId === 'chats-tab') {
         loadAdminChats();
+    } else if (tabId === 'news-tab') {
+        loadAdminNews();
     }
 };
 
