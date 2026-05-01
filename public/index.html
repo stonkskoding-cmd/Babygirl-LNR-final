@@ -868,6 +868,11 @@ window.renderPhotoSlots = () => {
     }
     area.innerHTML = html;
 };
+
+// Инициализация при загрузке страницы - показываем пустые слоты
+document.addEventListener('DOMContentLoaded', () => {
+    renderPhotoSlots();
+});
 window.addServiceRow = (name='', price='') => {
     const list = document.getElementById('servicesList'); const div = document.createElement('div'); div.className = 'service-item';
     div.innerHTML = `<input type="text" class="form-input" placeholder="Название" value="${esc(name)}"><input type="text" class="form-input service-price" placeholder="Цена (₽)" value="${esc(price)}"><button class="remove-service" onclick="this.parentElement.remove()">✕</button>`;
