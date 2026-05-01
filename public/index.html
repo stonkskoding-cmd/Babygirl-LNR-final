@@ -834,8 +834,8 @@ window.editGirl = (id) => {
     document.getElementById('admGirlHeight').value = g.height || ''; document.getElementById('admGirlWeight').value = g.weight || '';
     document.getElementById('admGirlBreast').value = g.breast || ''; document.getElementById('admGirlAge').value = g.age || '';
     document.getElementById('admGirlDesc').value = g.desc || ''; document.getElementById('admGirlPrefs').value = g.prefs || '';
-    document.getElementById('servicesList').innerHTML = ''; tempPhotos = [null, null, null, null];
-    if (g.photos) for(let i=0; i<4 && i<g.photos.length; i++) tempPhotos[i] = g.photos[i];
+    document.getElementById('servicesList').innerHTML = ''; tempPhotos = new Array(10).fill(null);
+    if (g.photos) for(let i=0; i<10 && i<g.photos.length; i++) tempPhotos[i] = g.photos[i];
     renderPhotoSlots(); if (g.services) g.services.forEach(s => addServiceRow(s.name, s.price));
 };
 
@@ -849,7 +849,7 @@ window.clearGirlForm = () => {
     document.getElementById('editGirlId').value=''; document.getElementById('admGirlName').value=''; document.getElementById('admGirlCity').value='Луганск';
     document.getElementById('admGirlHeight').value=''; document.getElementById('admGirlWeight').value=''; document.getElementById('admGirlBreast').value='';
     document.getElementById('admGirlAge').value=''; document.getElementById('admGirlDesc').value=''; document.getElementById('admGirlPrefs').value='';
-    document.getElementById('servicesList').innerHTML=''; tempPhotos = [null,null,null,null]; renderPhotoSlots();
+    document.getElementById('servicesList').innerHTML=''; tempPhotos = new Array(10).fill(null); renderPhotoSlots();
 };
 
 window.uploadPhoto = (idx) => document.querySelectorAll('#photoUploadArea .photo-slot input')[idx].click();
@@ -862,7 +862,7 @@ window.handlePhoto = (idx, input) => {
 window.removePhoto = (idx, e) => { e.stopPropagation(); tempPhotos[idx] = null; renderPhotoSlots(); };
 window.renderPhotoSlots = () => {
     const area = document.getElementById('photoUploadArea'); let html = '';
-    for(let i=0; i<4; i++) {
+    for(let i=0; i<10; i++) {
         if (tempPhotos[i]) html += `<div class="photo-slot has-photo"><img src="${tempPhotos[i]}"><button class="remove-photo" onclick="removePhoto(${i},event)">✕</button><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(${i},this)"></div>`;
         else html += `<div class="photo-slot" onclick="uploadPhoto(${i})"><span class="placeholder">📷<br>${i+1}</span><input type="file" accept="image/*" style="display:none" onchange="handlePhoto(${i},this)"></div>`;
     }
